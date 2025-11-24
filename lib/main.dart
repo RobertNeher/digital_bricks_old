@@ -24,35 +24,22 @@ class GateDemoPage extends StatefulWidget {
   final String title;
 
   @override
-  State<GateDemoPage> createState() => _GateDemoPageState();
+  State<GateDemoPage> createState() => _AndGateDemoPageState();
 }
 
-class _GateDemoPageState extends State<GateDemoPage> {
-  late AndGate _gate;
-  double _inputCount = 2;
+class _AndGateDemoPageState extends State<GateDemoPage> {
+  late AndGate _AndGate;
 
   @override
   void initState() {
     super.initState();
-    _gate = AndGate("and1", Offset.zero, inputCount: _inputCount.round());
-  }
-
-  void _updateInputCount(double value) {
-    setState(() {
-      _inputCount = value;
-      _gate.updateInputCount(_inputCount.round());
-      // Reset inputs to false when resizing for safety/simplicity in this demo
-      for (var pin in _gate.inputs) {
-        pin.value = false;
-      }
-      _gate.calculateOutput({});
-    });
+    _AndGate = AndGate("and1", Offset.zero, inputCount: 3);
   }
 
   void _toggleInput(int index) {
     setState(() {
-      _gate.inputs[index].value = !_gate.inputs[index].value;
-      _gate.calculateOutput({});
+      _AndGate.inputs[index].value = !_AndGate.inputs[index].value;
+      _AndGate.calculateOutput({});
     });
   }
 
@@ -62,22 +49,6 @@ class _GateDemoPageState extends State<GateDemoPage> {
       appBar: AppBar(title: Text(widget.title)),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text("Number of Inputs: ${_inputCount.round()}"),
-                Slider(
-                  value: _inputCount,
-                  min: 2,
-                  max: 8,
-                  divisions: 6,
-                  label: _inputCount.round().toString(),
-                  onChanged: _updateInputCount,
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: Center(
               child: Row(
@@ -86,13 +57,13 @@ class _GateDemoPageState extends State<GateDemoPage> {
                   // Interactive Input Toggles
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_gate.inputs.length, (index) {
+                    children: List.generate(_AndGate.inputs.length, (index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
                         child: ElevatedButton(
                           onPressed: () => _toggleInput(index),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _gate.inputs[index].value ? Colors.green : Colors.grey,
+                            backgroundColor: _AndGate.inputs[index].value ? Colors.green : Colors.grey,
                           ),
                           child: Text("In $index"),
                         ),
@@ -101,7 +72,7 @@ class _GateDemoPageState extends State<GateDemoPage> {
                   ),
                   const SizedBox(width: 50),
                   // The Gate Widget
-                  AndWidget(gate: _gate),
+                  AndWidget(gate: _AndGate),
                 ],
               ),
             ),
