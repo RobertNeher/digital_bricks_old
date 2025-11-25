@@ -36,7 +36,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
   void initState() {
     super.initState();
     _AndGate1 = AndGate("and1", Offset(0, 0), inputCount: 3);
-    _AndGate2 = AndGate("and2", Offset(150, 150), inputCount: 2);
+    _AndGate2 = AndGate("and2", Offset(250, 0), inputCount: 2);
     _connections = ConnectGates();
     _connections.connect(_AndGate1, "out", _AndGate2, "in1");
   }
@@ -86,7 +86,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                       );
                     }),
                   ),
-                  const SizedBox(width: 50),
+                  const SizedBox(width: 10),
                   // The Gate Widget
                   AndWidget(gate: _AndGate1),
                 ],
@@ -116,7 +116,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                       );
                     }),
                   ),
-                  const SizedBox(width: 50),
+                  const SizedBox(width: 10),
                   // The Gate Widget
                   AndWidget(gate: _AndGate2),
                 ],
