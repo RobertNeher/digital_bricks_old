@@ -25,23 +25,4 @@ class AndGate extends LogicComponent {
     }
     outputs.first.value = result;
   }
-  
-  void updateInputCount(int count) {
-    if (count < 2) count = 2; // Minimum 2 inputs for AND gate
-    if (count == inputs.length) return;
-    
-    if (count > inputs.length) {
-      // Add pins
-      int toAdd = count - inputs.length;
-      for (int i = 0; i < toAdd; i++) {
-        inputs.add(LogicPin());
-      }
-    } else {
-      // Remove pins (from the end)
-      int toRemove = inputs.length - count;
-      for (int i = 0; i < toRemove; i++) {
-        inputs.removeLast();
-      }
-    }
-  }
 }
