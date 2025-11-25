@@ -17,7 +17,7 @@ class AndGate extends LogicComponent {
   @override
   void calculateOutput(Map<String, LogicComponent> components) {
     bool result = true;
-    for (var pin in inputs) {
+    for (LogicPin pin in inputs) {
       if (!pin.value) {
         result = false;
         break;
