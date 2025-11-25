@@ -12,4 +12,8 @@ abstract class LogicComponent {
   void calculateOutput(Map<String, LogicComponent> components);
   // Constructor, serialization methods, etc.
   LogicComponent(this.id, this.position);
+
+  LogicPin findTargetPin(String targetPinID) {
+    return outputs.firstWhere((input) => input.connectedToId == targetPinID);
+  }
 }

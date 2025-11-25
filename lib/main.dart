@@ -1,5 +1,6 @@
 import 'package:digital_bricks/src/and_gate.dart';
 import 'package:digital_bricks/src/and_widget.dart';
+import 'package:digital_bricks/src/connect_gates.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -29,18 +30,22 @@ class GateDemoPage extends StatefulWidget {
 
 class _AndGateDemoPageState extends State<GateDemoPage> {
   late AndGate _AndGate1, _AndGate2;
+  late ConnectGates _connections;
 
   @override
   void initState() {
     super.initState();
     _AndGate1 = AndGate("and1", Offset(0, 0), inputCount: 3);
-    _AndGate2 = AndGate("and2", Offset(0, 100), inputCount: 2);
+    _AndGate2 = AndGate("and2", Offset(150, 150), inputCount: 2);
+    _connections = ConnectGates();
+    _connections.connect(_AndGate1, "out", _AndGate2, "in1");
   }
 
   void _toggleInput1(int index) {
     setState(() {
       _AndGate1.inputs[index].value = !_AndGate1.inputs[index].value;
       _AndGate1.calculateOutput({});
+      // _connections.propagate();
     });
   }
 
