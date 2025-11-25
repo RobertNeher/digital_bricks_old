@@ -16,7 +16,7 @@ class OrGate extends LogicComponent {
   @override
   void calculateOutput(Map<String, LogicComponent> components) {
     bool result = false;
-    for (var pin in inputs) {
+    for (LogicPin pin in inputs) {
       if (pin.value) {
         result = true;
         break;
