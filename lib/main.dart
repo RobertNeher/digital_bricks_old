@@ -34,7 +34,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
   void initState() {
     super.initState();
     _AndGate1 = AndGate("and1", Offset(0, 0), inputCount: 3);
-    _AndGate2 = AndGate("and2", Offset(0, 100), inputCount: 2);
+    _AndGate2 = AndGate("and2", Offset(250, 0), inputCount: 2);
   }
 
   void _toggleInput1(int index) {
@@ -55,60 +55,68 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text(widget.title)),
-        body: Column(
+        body: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Interactive Input Toggles
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_AndGate1.inputs.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: ElevatedButton(
-                        onPressed: () => _toggleInput1(index),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _AndGate1.inputs[index].value
-                              ? Colors.green
-                              : Colors.grey,
+            Positioned(
+              top: _AndGate1.position.dy,
+              left: _AndGate1.position.dx,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Interactive Input Toggles
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_AndGate1.inputs.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: ElevatedButton(
+                          onPressed: () => _toggleInput1(index),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _AndGate1.inputs[index].value
+                                ? Colors.green
+                                : Colors.grey,
+                          ),
+                          child: Text("In $index"),
                         ),
-                        child: Text("In $index"),
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(width: 50),
-                // The Gate Widget
-                AndWidget(gate: _AndGate1),
-              ],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 50),
+                  // The Gate Widget
+                  AndWidget(gate: _AndGate1),
+                ],
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Interactive Input Toggles
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_AndGate2.inputs.length, (index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: ElevatedButton(
-                        onPressed: () => _toggleInput2(index),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _AndGate2.inputs[index].value
-                              ? Colors.green
-                              : Colors.grey,
+            Positioned(
+              top: _AndGate2.position.dy,
+              left: _AndGate2.position.dx,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Interactive Input Toggles
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_AndGate2.inputs.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: ElevatedButton(
+                          onPressed: () => _toggleInput2(index),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _AndGate2.inputs[index].value
+                                ? Colors.green
+                                : Colors.grey,
+                          ),
+                          child: Text("In $index"),
                         ),
-                        child: Text("In $index"),
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(width: 50),
-                // The Gate Widget
-                AndWidget(gate: _AndGate2),
-              ],
-            ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 50),
+                  // The Gate Widget
+                  AndWidget(gate: _AndGate2),
+                ],
+              ),
+            )
           ],
         ));
   }

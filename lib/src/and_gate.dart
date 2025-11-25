@@ -17,7 +17,7 @@ class AndGate extends LogicComponent {
   @override
   void calculateOutput(Map<String, LogicComponent> components) {
     bool result = true;
-    for (var pin in inputs) {
+    for (LogicPin pin in inputs) {
       if (!pin.value) {
         result = false;
         break;
@@ -25,11 +25,11 @@ class AndGate extends LogicComponent {
     }
     outputs.first.value = result;
   }
-  
+
   void updateInputCount(int count) {
     if (count < 2) count = 2; // Minimum 2 inputs for AND gate
     if (count == inputs.length) return;
-    
+
     if (count > inputs.length) {
       // Add pins
       int toAdd = count - inputs.length;

@@ -3,8 +3,7 @@ import 'package:digital_bricks/src/logic_pin.dart';
 import 'package:flutter/material.dart';
 
 class OrGate extends LogicComponent {
-  OrGate(String id, Offset position, int inputCount)
-      : super(id, position) {
+  OrGate(String id, Offset position, int inputCount) : super(id, position) {
     for (int i = 0; i < inputCount; i++) {
       inputs.add(LogicPin());
     }
@@ -17,7 +16,7 @@ class OrGate extends LogicComponent {
   @override
   void calculateOutput(Map<String, LogicComponent> components) {
     bool result = false;
-    for (var pin in inputs) {
+    for (LogicPin pin in inputs) {
       if (pin.value) {
         result = true;
         break;
@@ -25,11 +24,11 @@ class OrGate extends LogicComponent {
     }
     outputs.first.value = result;
   }
-  
+
   void updateInputCount(int count) {
     if (count < 2) count = 2; // Minimum 2 inputs for OR gate
     if (count == inputs.length) return;
-    
+
     if (count > inputs.length) {
       // Add pins
       int toAdd = count - inputs.length;
