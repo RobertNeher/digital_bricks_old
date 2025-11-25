@@ -28,57 +28,88 @@ class GateDemoPage extends StatefulWidget {
 }
 
 class _AndGateDemoPageState extends State<GateDemoPage> {
-  late AndGate _AndGate;
+  late AndGate _AndGate1, _AndGate2;
 
   @override
   void initState() {
     super.initState();
-    _AndGate = AndGate("and1", Offset.zero, inputCount: 3);
+    _AndGate1 = AndGate("and1", Offset(0, 0), inputCount: 3);
+    _AndGate2 = AndGate("and2", Offset(0, 100), inputCount: 2);
   }
 
-  void _toggleInput(int index) {
+  void _toggleInput1(int index) {
     setState(() {
-      _AndGate.inputs[index].value = !_AndGate.inputs[index].value;
-      _AndGate.calculateOutput({});
+      _AndGate1.inputs[index].value = !_AndGate1.inputs[index].value;
+      _AndGate1.calculateOutput({});
+    });
+  }
+
+  void _toggleInput2(int index) {
+    setState(() {
+      _AndGate2.inputs[index].value = !_AndGate2.inputs[index].value;
+      _AndGate2.calculateOutput({});
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Interactive Input Toggles
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_AndGate.inputs.length, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: ElevatedButton(
-                          onPressed: () => _toggleInput(index),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _AndGate.inputs[index].value ? Colors.green : Colors.grey,
-                          ),
-                          child: Text("In $index"),
+        appBar: AppBar(title: Text(widget.title)),
+        body: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Interactive Input Toggles
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_AndGate1.inputs.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: ElevatedButton(
+                        onPressed: () => _toggleInput1(index),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _AndGate1.inputs[index].value
+                              ? Colors.green
+                              : Colors.grey,
                         ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(width: 50),
-                  // The Gate Widget
-                  AndWidget(gate: _AndGate),
-                ],
-              ),
+                        child: Text("In $index"),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(width: 50),
+                // The Gate Widget
+                AndWidget(gate: _AndGate1),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Interactive Input Toggles
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_AndGate2.inputs.length, (index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: ElevatedButton(
+                        onPressed: () => _toggleInput2(index),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _AndGate2.inputs[index].value
+                              ? Colors.green
+                              : Colors.grey,
+                        ),
+                        child: Text("In $index"),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(width: 50),
+                // The Gate Widget
+                AndWidget(gate: _AndGate2),
+              ],
+            ),
+          ],
+        ));
   }
 }
