@@ -10,7 +10,8 @@ class AndWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 100,
-      height: 100 + (gate.inputs.length * 20.0), // Adjust height based on inputs
+      height:
+          100 + (gate.inputs.length * 20.0), // Adjust height based on inputs
       decoration: BoxDecoration(
         color: Colors.blue[100],
         border: Border.all(color: Colors.blue),
@@ -19,10 +20,14 @@ class AndWidget extends StatelessWidget {
       child: Stack(
         children: [
           // Gate Body (Symbolic)
-          Center(
-            child: Text(
-              "&",
-              style: TextStyle(fontWeight: FontWeight.bold),
+          Positioned(
+            left: 40,
+            top: 3,
+            child: Center(
+              child: Text(
+                "&",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+              ),
             ),
           ),
           // Inputs (Left side)
@@ -35,7 +40,8 @@ class AndWidget extends StatelessWidget {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: gate.inputs[index].value ? Colors.green : Colors.red,
+                      color:
+                          gate.inputs[index].value ? Colors.green : Colors.red,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.black),
                     ),
@@ -61,7 +67,8 @@ class AndWidget extends StatelessWidget {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: gate.outputs.first.value ? Colors.green : Colors.red,
+                      color:
+                          gate.outputs.first.value ? Colors.green : Colors.red,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.black),
                     ),

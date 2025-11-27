@@ -3,7 +3,7 @@ import 'package:digital_bricks/src/logic_pin.dart';
 import 'package:flutter/material.dart';
 
 class AndGate extends LogicComponent {
-  AndGate(String id, Offset position, {int inputCount = 2})
+  AndGate({required String id, required Offset position, int inputCount = 2})
       : super(id, position) {
     for (int i = 0; i < inputCount; i++) {
       inputs.add(LogicPin());

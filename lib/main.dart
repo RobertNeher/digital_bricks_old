@@ -1,5 +1,7 @@
 import 'package:digital_bricks/src/and_gate.dart';
 import 'package:digital_bricks/src/and_widget.dart';
+import 'package:digital_bricks/src/oscillator.dart';
+import 'package:digital_bricks/src/oscillator_widget.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -29,12 +31,15 @@ class GateDemoPage extends StatefulWidget {
 
 class _AndGateDemoPageState extends State<GateDemoPage> {
   late AndGate _AndGate1, _AndGate2;
+  late Oscillator _oscillator;
 
   @override
   void initState() {
     super.initState();
-    _AndGate1 = AndGate("and1", Offset(0, 0), inputCount: 3);
-    _AndGate2 = AndGate("and2", Offset(250, 0), inputCount: 2);
+    _AndGate1 = AndGate(id: "and1", position: Offset(0, 0), inputCount: 3);
+    _AndGate2 = AndGate(id: "and2", position: Offset(250, 0), inputCount: 2);
+    _oscillator =
+        Oscillator(id: "oscillator", position: Offset(500, 0), frequency: 1);
   }
 
   void _toggleInput1(int index) {
@@ -114,6 +119,17 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                   const SizedBox(width: 50),
                   // The Gate Widget
                   AndWidget(gate: _AndGate2),
+                ],
+              ),
+            ),
+            Positioned(
+              top: _oscillator.position.dy,
+              left: _oscillator.position.dx,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // The Gate Widget
+                  OscillatorWidget(oscillator: _oscillator),
                 ],
               ),
             )
