@@ -38,8 +38,11 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
     super.initState();
     _AndGate1 = AndGate(id: "and1", position: Offset(0, 0), inputCount: 3);
     _AndGate2 = AndGate(id: "and2", position: Offset(250, 0), inputCount: 2);
-    _oscillator =
-        Oscillator(id: "oscillator", position: Offset(0, 200), frequency: 1);
+    _oscillator = Oscillator(
+        id: "oscillator",
+        position: Offset(0, 200),
+        frequency: 10,
+        setState: () => setState(() {}));
   }
 
   void _toggleInput1(int index) {
