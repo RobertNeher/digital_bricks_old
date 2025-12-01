@@ -39,7 +39,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
     _AndGate1 = AndGate(id: "and1", position: Offset(0, 0), inputCount: 3);
     _AndGate2 = AndGate(id: "and2", position: Offset(250, 0), inputCount: 2);
     _oscillator =
-        Oscillator(id: "oscillator", position: Offset(500, 0), frequency: 1);
+        Oscillator(id: "oscillator", position: Offset(0, 200), frequency: 1);
   }
 
   void _toggleInput1(int index) {

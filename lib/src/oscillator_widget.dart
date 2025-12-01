@@ -19,22 +19,23 @@ class OscillatorWidget extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Oscillstor Symbol
+          // Oscillator Symbol
           Positioned(
-            left: 40,
-            bottom: 5,
-            child: Center(
-              child: CustomPaint(
-                painter: SquarePulsePainter(),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 40,
-            top: 3,
-            child: Center(
-              child: Text("${oscillator.frequency.round()} Hz",
-                  style: const TextStyle(fontSize: 20)),
+            left: 25,
+            top: 0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CustomPaint(
+                  painter: SquarePulsePainter(),
+                  child: Container(
+                    width: 40,
+                    height: 30,
+                  ),
+                ),
+                Text("${oscillator.frequency.round()} Hz",
+                    style: const TextStyle(fontSize: 18)),
+              ],
             ),
           ),
           Positioned(
@@ -71,16 +72,21 @@ class OscillatorWidget extends StatelessWidget {
 class SquarePulsePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    print(size);
     final paint = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-    canvas.drawLine(Offset(0, 0), Offset(size.width / 4, 0), paint);
+    canvas.drawLine(
+        Offset(0, size.height), Offset(size.width / 4, size.height), paint);
     canvas.drawLine(Offset(size.width / 4, size.height),
+        Offset(size.width / 4, size.height / 2), paint);
+    canvas.drawLine(Offset(size.width / 4, size.height / 2),
+        Offset(size.width * 0.75, size.height / 2), paint);
+    canvas.drawLine(Offset(size.width * 0.75, size.height / 2),
         Offset(size.width * 0.75, size.height), paint);
     canvas.drawLine(Offset(size.width * 0.75, size.height),
-        Offset(size.width * 0.75, 0), paint);
-    canvas.drawLine(Offset(size.width * 0.75, 0), Offset(size.width, 0), paint);
+        Offset(size.width, size.height), paint);
   }
 
   @override
