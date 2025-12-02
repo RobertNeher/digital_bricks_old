@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:digital_bricks/src/and_gate.dart';
 import 'package:digital_bricks/src/and_widget.dart';
 import 'package:digital_bricks/src/or_gate.dart';
@@ -58,10 +61,64 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
     return "$prefix${_idCounter++}";
   }
 
+  Future<void> _saveCircuit() async {
+    final List<Map<String, dynamic>> jsonList =
+        _components.map((c) => c.toJson()).toList();
+    final String jsonString = jsonEncode(jsonList);
+    final File file = File('assets/digital_bricks.json');
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+    }
+    await file.writeAsString(jsonString);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Circuit saved to assets/digital_bricks.json')));
+    }
+  }
+
+  Future<void> _loadCircuit() async {
+    final File file = File('assets/digital_bricks.json');
+    if (await file.exists()) {
+      final String jsonString = await file.readAsString();
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      setState(() {
+        _components.clear();
+        for (var json in jsonList) {
+          _components.add(
+              LogicComponent.fromJson(json, setState: () => setState(() {})));
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Circuit loaded from assets/digital_bricks.json')));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No saved circuit found')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveCircuit,
+            tooltip: 'Save Circuit',
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: _loadCircuit,
+            tooltip: 'Load Circuit',
+          ),
+        ],
+      ),
       body: Row(
         children: [
           // Sidebar

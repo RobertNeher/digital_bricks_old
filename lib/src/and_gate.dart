@@ -25,4 +25,15 @@ class AndGate extends LogicComponent {
     }
     outputs.first.value = result;
   }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'AND',
+      'id': id,
+      'dx': position.dx,
+      'dy': position.dy,
+      'inputCount': inputs.length,
+    };
+  }
 }

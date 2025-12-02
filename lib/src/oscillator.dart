@@ -35,4 +35,15 @@ class Oscillator extends LogicComponent {
 
   @override
   bool get hasOutput => true;
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'OSC',
+      'id': id,
+      'dx': position.dx,
+      'dy': position.dy,
+      'frequency': frequency,
+    };
+  }
 }

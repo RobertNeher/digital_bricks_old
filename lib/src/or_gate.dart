@@ -25,4 +25,15 @@ class OrGate extends LogicComponent {
     }
     outputs.first.value = result;
   }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': 'OR',
+      'id': id,
+      'dx': position.dx,
+      'dy': position.dy,
+      'inputCount': inputs.length,
+    };
+  }
 }
