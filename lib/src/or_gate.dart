@@ -3,7 +3,8 @@ import 'package:digital_bricks/src/logic_pin.dart';
 import 'package:flutter/material.dart';
 
 class OrGate extends LogicComponent {
-  OrGate(String id, Offset position, int inputCount) : super(id, position) {
+  OrGate({required String id, required Offset position, int inputCount = 2})
+      : super(id, position) {
     for (int i = 0; i < inputCount; i++) {
       inputs.add(LogicPin());
     }

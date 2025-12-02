@@ -1,8 +1,11 @@
 import 'package:digital_bricks/src/and_gate.dart';
 import 'package:digital_bricks/src/and_widget.dart';
+import 'package:digital_bricks/src/or_gate.dart';
+import 'package:digital_bricks/src/or_widget.dart';
 import 'package:digital_bricks/src/oscillator.dart';
 import 'package:digital_bricks/src/oscillator_widget.dart';
 import 'package:digital_bricks/src/draggable_widget.dart';
+import 'package:digital_bricks/src/logic_component.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -16,6 +19,7 @@ class DigitalBricksApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(primarySwatch: Colors.blue),
+      debugShowCheckedModeBanner: false,
       home: GateDemoPage(title: "Digital Bricks"),
     );
   }
@@ -31,89 +35,137 @@ class GateDemoPage extends StatefulWidget {
 }
 
 class _AndGateDemoPageState extends State<GateDemoPage> {
-  late AndGate _AndGate1, _AndGate2;
-  late Oscillator _oscillator;
+  final List<LogicComponent> _components = [];
+  int _idCounter = 0;
 
   @override
   void initState() {
     super.initState();
-    _AndGate1 = AndGate(id: "and1", position: Offset(0, 0), inputCount: 3);
-    _AndGate2 = AndGate(id: "and2", position: Offset(250, 0), inputCount: 2);
-    _oscillator = Oscillator(
-        id: "oscillator",
-        position: Offset(0, 200),
-        frequency: 0.5,
-        setState: () => setState(() {}));
+    // Initialize with some demo components
+    _components.add(
+        AndGate(id: "and1", position: const Offset(300, 50), inputCount: 2));
+    _components.add(
+        OrGate(id: "or1", position: const Offset(300, 200), inputCount: 2));
   }
 
-  void _toggleInput1(int index) {
+  void _addComponent(LogicComponent component) {
     setState(() {
-      _AndGate1.inputs[index].value = !_AndGate1.inputs[index].value;
-      _AndGate1.calculateOutput({});
+      _components.add(component);
     });
   }
 
-  void _toggleInput2(int index) {
-    setState(() {
-      _AndGate2.inputs[index].value = !_AndGate2.inputs[index].value;
-      _AndGate2.calculateOutput({});
-    });
+  String _generateId(String prefix) {
+    return "$prefix${_idCounter++}";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text(widget.title)),
-        body: Stack(
-          children: [
-            Positioned(
-              top: _AndGate1.position.dy,
-              left: _AndGate1.position.dx,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    _AndGate1.position += details.delta;
-                  });
-                },
-                child: AndWidget(gate: _AndGate1),
-              ),
+      appBar: AppBar(title: Text(widget.title)),
+      body: Row(
+        children: [
+          // Sidebar
+          Container(
+            width: 120,
+            color: Colors.grey[200],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                const Text("Components",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                _buildSidebarItem("AND Gate", "AND"),
+                _buildSidebarItem("OR Gate", "OR"),
+                _buildSidebarItem("Oscillator", "OSC"),
+              ],
             ),
-            Positioned(
-              top: _AndGate2.position.dy,
-              left: _AndGate2.position.dx,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    _AndGate2.position += details.delta;
-                  });
-                },
-                child: AndWidget(gate: _AndGate2),
-              ),
+          ),
+          // Workspace
+          Expanded(
+            child: DragTarget<String>(
+              onAcceptWithDetails: (DragTargetDetails<String> details) {
+                final renderBox = context.findRenderObject() as RenderBox;
+                final localPosition = renderBox.globalToLocal(details.offset);
+
+                LogicComponent? newComponent;
+                if (details.data == "AND") {
+                  newComponent = AndGate(
+                      id: _generateId("and"),
+                      position: localPosition,
+                      inputCount: 2);
+                } else if (details.data == "OR") {
+                  newComponent = OrGate(
+                      id: _generateId("or"),
+                      position: localPosition,
+                      inputCount: 2);
+                } else if (details.data == "OSC") {
+                  newComponent = Oscillator(
+                      id: _generateId("osc"),
+                      position: localPosition,
+                      frequency: 1.0,
+                      setState: () => setState(() {}));
+                }
+
+                if (newComponent != null) {
+                  _addComponent(newComponent);
+                }
+              },
+              builder: (context, List<String?> candidateData,
+                  List<dynamic> rejectedData) {
+                return Stack(
+                  children: [
+                    // Grid or background could go here
+                    ..._components.map((component) {
+                      Widget widget;
+                      if (component is AndGate) {
+                        widget = AndWidget(gate: component);
+                      } else if (component is OrGate) {
+                        widget = OrWidget(gate: component);
+                      } else if (component is Oscillator) {
+                        widget = OscillatorWidget(oscillator: component);
+                      } else {
+                        widget = const SizedBox();
+                      }
+
+                      return DraggableWidget(
+                        component: component,
+                        onDrag: () => setState(() {}),
+                        child: widget,
+                      );
+                    }).toList(),
+                  ],
+                );
+              },
             ),
-            Positioned(
-              top: _oscillator.position.dy,
-              left: _oscillator.position.dx,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    _oscillator.position += details.delta;
-                  });
-                },
-                child: OscillatorWidget(oscillator: _oscillator),
-              ),
-            ),
-            DraggableWidget(
-              component: _oscillator,
-              onDrag: () => setState(() {}),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // The Gate Widget
-                  OscillatorWidget(oscillator: _oscillator),
-                ],
-              ),
-            ),
-          ],
-        ));
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem(String label, String type) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Draggable<String>(
+        data: type,
+        feedback: Material(
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.blue.withValues(alpha: 0.5),
+            child: Text(label),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(5),
+            color: Colors.white,
+          ),
+          child: Text(label),
+        ),
+      ),
+    );
   }
 }
