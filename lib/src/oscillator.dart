@@ -13,7 +13,7 @@ class Oscillator extends LogicComponent {
   Oscillator(
       {required String id,
       required Offset position,
-      this.frequency = 1,
+      this.frequency = 10,
       required this.setState})
       : super(id, position) {
     outputs.add(LogicPin());
@@ -30,7 +30,6 @@ class Oscillator extends LogicComponent {
     timer = Timer.periodic(
         Duration(milliseconds: (1 / frequency * 1000).round()), (timer) {
       outputs.first.value = !outputs.first.value;
-      print("$frequency ${outputs.first.value}");
     });
   }
 
