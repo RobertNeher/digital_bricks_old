@@ -20,7 +20,7 @@ class AndWidget extends StatelessWidget {
       child: Stack(
         children: [
           // Gate Body (Symbolic)
-          Positioned(
+          const Positioned(
             left: 40,
             top: 3,
             child: Center(
@@ -46,8 +46,8 @@ class AndWidget extends StatelessWidget {
                       border: Border.all(color: Colors.black),
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Text("In$index", style: TextStyle(fontSize: 10)),
+                  const SizedBox(width: 4),
+                  Text("In$index", style: const TextStyle(fontSize: 10)),
                 ],
               );
             }),
@@ -61,8 +61,8 @@ class AndWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("Out", style: TextStyle(fontSize: 10)),
-                  SizedBox(width: 4),
+                  const Text("Out", style: TextStyle(fontSize: 10)),
+                  const SizedBox(width: 4),
                   Container(
                     width: 10,
                     height: 10,
