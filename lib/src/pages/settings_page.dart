@@ -10,7 +10,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = false;
+  bool _showGrid = false;
   late double _minDistance;
 
   @override
@@ -34,16 +34,15 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         children: [
           SwitchListTile(
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Enable dark theme (Demo only)'),
-            value: _darkMode,
+            title: const Text('Show Grid'),
+            subtitle: const Text('Enable grid'),
+            value: _showGrid,
             onChanged: (bool value) {
               setState(() {
-                _darkMode = value;
+                _showGrid = value;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Dark mode setting changed (Visual only)')),
+                const SnackBar(content: Text('Grid setting changed')),
               );
             },
           ),
