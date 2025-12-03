@@ -4,10 +4,10 @@ Simulation of logical circuits.
 
 ## Features
 * Pre-defined logic circuits: AND, OR, XOR, NAND, NOR, NXOR: Each with flexible number of inputs:
-![alt text](/assets/20240722142346365.png "Logic gate symbols")
+![alt text](/assets/images/20240722142346365.png "Logic gate symbols")
 
 * Flip-flop types
-![alt text](/assets/b994dc405860bca8b1bf8c848fe84cc9.jpg "Flip-flop types")
+![alt text](/assets/images/b994dc405860bca8b1bf8c848fe84cc9.jpg "Flip-flop types")
 * Pre-defined logic circuits: NOT (Inverter), AND, OR, XOR, NAND, NOR, NXOR: Each with flexible number of inputs
 * Flip-flop
 * Oscillator

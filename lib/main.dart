@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:digital_bricks/src/components/inverter.dart';
+import 'package:digital_bricks/src/components/inverter_widget.dart';
+import 'package:digital_bricks/src/components/nand_gate.dart';
 import 'package:digital_bricks/src/pages/about_page.dart';
 import 'package:digital_bricks/src/components/and_gate.dart';
 import 'package:digital_bricks/src/components/and_widget.dart';
@@ -310,6 +313,7 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
                 _buildSidebarItem("AND Gate", "AND"),
+                _buildSidebarItem("Inverter", "INV"),
                 _buildSidebarItem("OR Gate", "OR"),
                 _buildSidebarItem("Oscillator", "OSC"),
               ],
@@ -328,11 +332,14 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                       id: _generateId("and"),
                       position: localPosition,
                       inputCount: 2);
-                } else if (details.data == "OR") {
-                  newComponent = OrGate(
-                      id: _generateId("or"),
+                } else if (details.data == "NAND") {
+                  newComponent = NandGate(
+                      id: _generateId("nand"),
                       position: localPosition,
                       inputCount: 2);
+                } else if (details.data == "INV") {
+                  newComponent =
+                      Inverter(id: _generateId("inv"), position: localPosition);
                 } else if (details.data == "OSC") {
                   newComponent = Oscillator(
                       id: _generateId("osc"),
@@ -403,6 +410,13 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
                         } else if (component is Oscillator) {
                           widget = OscillatorWidget(
                             oscillator: component,
+                            onOutputTap: (idx) =>
+                                _onOutputTap(component.id, idx),
+                          );
+                        } else if (component is Inverter) {
+                          widget = InverterWidget(
+                            gate: component,
+                            onInputTap: (idx) => _onInputTap(component.id, idx),
                             onOutputTap: (idx) =>
                                 _onOutputTap(component.id, idx),
                           );
