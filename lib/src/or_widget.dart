@@ -25,7 +25,10 @@ class OrWidget extends StatelessWidget {
             child: Center(
               child: Text(
                 "\u2265 1",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 30,
+                ),
               ),
             ),
           ),
