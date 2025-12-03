@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 
 class AndWidget extends StatelessWidget {
   final AndGate gate;
+  final Function(int)? onInputTap;
+  final Function(int)? onOutputTap;
 
-  const AndWidget({super.key, required this.gate});
+  const AndWidget({
+    super.key,
+    required this.gate,
+    this.onInputTap,
+    this.onOutputTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,21 +41,25 @@ class AndWidget extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(gate.inputs.length, (index) {
-              return Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color:
-                          gate.inputs[index].value ? Colors.green : Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black),
+              return GestureDetector(
+                onTap: () => onInputTap?.call(index),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: gate.inputs[index].value
+                            ? Colors.green
+                            : Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text("In$index", style: const TextStyle(fontSize: 10)),
-                ],
+                    const SizedBox(width: 4),
+                    Text("In$index", style: const TextStyle(fontSize: 10)),
+                  ],
+                ),
               );
             }),
           ),
@@ -58,22 +69,26 @@ class AndWidget extends StatelessWidget {
             top: 0,
             bottom: 0,
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Out", style: TextStyle(fontSize: 10)),
-                  const SizedBox(width: 4),
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color:
-                          gate.outputs.first.value ? Colors.green : Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black),
+              child: GestureDetector(
+                onTap: () => onOutputTap?.call(0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Out", style: TextStyle(fontSize: 10)),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: gate.outputs.first.value
+                            ? Colors.green
+                            : Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 
 class OscillatorWidget extends StatelessWidget {
   final Oscillator oscillator;
+  final Function(int)? onOutputTap;
 
-  const OscillatorWidget({super.key, required this.oscillator});
+  const OscillatorWidget({
+    super.key,
+    required this.oscillator,
+    this.onOutputTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,23 +48,26 @@ class OscillatorWidget extends StatelessWidget {
             top: 0,
             bottom: 0,
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Out", style: TextStyle(fontSize: 10)),
-                  const SizedBox(width: 4),
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: oscillator.outputs.first.value
-                          ? Colors.green
-                          : Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black),
+              child: GestureDetector(
+                onTap: () => onOutputTap?.call(0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Out", style: TextStyle(fontSize: 10)),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: oscillator.outputs.first.value
+                            ? Colors.green
+                            : Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

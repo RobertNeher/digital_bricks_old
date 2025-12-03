@@ -26,11 +26,7 @@ class Oscillator extends LogicComponent {
 
   @override
   void calculateOutput(Map<String, LogicComponent> components) {
-    timer.cancel();
-    timer = Timer.periodic(
-        Duration(milliseconds: (1 / frequency * 1000).round()), (timer) {
-      outputs.first.value = !outputs.first.value;
-    });
+    // Oscillator is self-driven by Timer, no input dependency to calculate
   }
 
   @override

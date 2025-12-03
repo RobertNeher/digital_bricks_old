@@ -11,6 +11,8 @@ import 'package:digital_bricks/src/oscillator_widget.dart';
 import 'package:digital_bricks/src/draggable_widget.dart';
 import 'package:digital_bricks/src/logic_component.dart';
 import 'package:digital_bricks/src/settings_page.dart';
+import 'package:digital_bricks/src/wire.dart';
+import 'package:digital_bricks/src/wire_painter.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -41,8 +43,14 @@ class GateDemoPage extends StatefulWidget {
 
 class _AndGateDemoPageState extends State<GateDemoPage> {
   final List<LogicComponent> _components = [];
+  final List<Wire> _wires = [];
   int _idCounter = 0;
   double _minDistance = 50.0;
+
+  // Wire dragging state
+  String? _dragStartId;
+  int? _dragStartIndex;
+  Offset? _dragCurrentPosition;
 
   @override
   void initState() {
@@ -103,6 +111,72 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
         }
       }
     } while (moved && iterations < maxIterations);
+  }
+
+  void _updateSimulation() {
+    // 1. Reset all inputs (optional, depends on logic)
+    // 2. Propagate values from outputs to inputs via wires
+    for (var wire in _wires) {
+      final startComp =
+          _components.firstWhere((c) => c.id == wire.startComponentId);
+      final endComp =
+          _components.firstWhere((c) => c.id == wire.endComponentId);
+
+      // Get value from start component output
+      // Assuming single output for now or using index if multiple
+      // LogicComponent doesn't expose output values directly in a list easily without casting
+      // We need to update LogicComponent to expose this or cast here.
+      // For now, let's assume we can access outputs via the list.
+      if (startComp.outputs.isNotEmpty &&
+          wire.startPinIndex < startComp.outputs.length) {
+        wire.value = startComp.outputs[wire.startPinIndex].value;
+      }
+
+      // Set value to end component input
+      if (endComp.inputs.isNotEmpty &&
+          wire.endPinIndex < endComp.inputs.length) {
+        endComp.inputs[wire.endPinIndex].value = wire.value;
+      }
+    }
+
+    // 3. Recalculate all components
+    // Simple approach: just iterate. For complex circuits, need topological sort or multiple passes.
+    // Multiple passes for propagation
+    for (int i = 0; i < 3; i++) {
+      for (var component in _components) {
+        component.calculateOutput({for (var c in _components) c.id: c});
+      }
+    }
+  }
+
+  void _onOutputTap(String componentId, int pinIndex) {
+    setState(() {
+      _dragStartId = componentId;
+      _dragStartIndex = pinIndex;
+      // Set initial drag position to the pin location
+      final comp = _components.firstWhere((c) => c.id == componentId);
+      _dragCurrentPosition = comp.getOutputPosition(pinIndex);
+    });
+  }
+
+  void _onInputTap(String componentId, int pinIndex) {
+    if (_dragStartId != null && _dragStartIndex != null) {
+      // Create wire
+      if (_dragStartId == componentId) return; // Don't connect to self
+
+      setState(() {
+        _wires.add(Wire(
+          startComponentId: _dragStartId!,
+          startPinIndex: _dragStartIndex!,
+          endComponentId: componentId,
+          endPinIndex: pinIndex,
+        ));
+        _dragStartId = null;
+        _dragStartIndex = null;
+        _dragCurrentPosition = null;
+        _updateSimulation();
+      });
+    }
   }
 
   String _generateId(String prefix) {
@@ -273,28 +347,80 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
               },
               builder: (context, List<String?> candidateData,
                   List<dynamic> rejectedData) {
-                return Stack(
-                  children: [
-                    // Grid or background could go here
-                    ..._components.map((component) {
-                      Widget widget;
-                      if (component is AndGate) {
-                        widget = AndWidget(gate: component);
-                      } else if (component is OrGate) {
-                        widget = OrWidget(gate: component);
-                      } else if (component is Oscillator) {
-                        widget = OscillatorWidget(oscillator: component);
-                      } else {
-                        widget = const SizedBox();
-                      }
+                return GestureDetector(
+                  onPanUpdate: (details) {
+                    if (_dragStartId != null) {
+                      setState(() {
+                        final renderBox =
+                            context.findRenderObject() as RenderBox;
+                        _dragCurrentPosition =
+                            renderBox.globalToLocal(details.globalPosition);
+                      });
+                    }
+                  },
+                  onPanEnd: (details) {
+                    if (_dragStartId != null) {
+                      setState(() {
+                        _dragStartId = null;
+                        _dragStartIndex = null;
+                        _dragCurrentPosition = null;
+                      });
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      // Wires
+                      CustomPaint(
+                        painter: WirePainter(
+                          wires: _wires,
+                          components: _components,
+                          dragStartPos: _dragStartId != null
+                              ? _components
+                                  .firstWhere((c) => c.id == _dragStartId)
+                                  .getOutputPosition(_dragStartIndex!)
+                              : null,
+                          dragEndPos: _dragCurrentPosition,
+                        ),
+                        size: Size.infinite,
+                      ),
+                      // Components
+                      ..._components.map((component) {
+                        Widget widget;
+                        if (component is AndGate) {
+                          widget = AndWidget(
+                            gate: component,
+                            onInputTap: (idx) => _onInputTap(component.id, idx),
+                            onOutputTap: (idx) =>
+                                _onOutputTap(component.id, idx),
+                          );
+                        } else if (component is OrGate) {
+                          widget = OrWidget(
+                            gate: component,
+                            onInputTap: (idx) => _onInputTap(component.id, idx),
+                            onOutputTap: (idx) =>
+                                _onOutputTap(component.id, idx),
+                          );
+                        } else if (component is Oscillator) {
+                          widget = OscillatorWidget(
+                            oscillator: component,
+                            onOutputTap: (idx) =>
+                                _onOutputTap(component.id, idx),
+                          );
+                        } else {
+                          widget = const SizedBox();
+                        }
 
-                      return DraggableWidget(
-                        component: component,
-                        onDrag: () => setState(() {}),
-                        child: widget,
-                      );
-                    }).toList(),
-                  ],
+                        return DraggableWidget(
+                          component: component,
+                          onDrag: () {
+                            setState(() {});
+                            _updateSimulation();
+                          },
+                          child: widget,
+                        );
+                      }).toList(),
+                    ],
+                  ),
                 );
               },
             ),
