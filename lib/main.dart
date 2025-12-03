@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:digital_bricks/src/about_page.dart';
 import 'package:digital_bricks/src/and_gate.dart';
 import 'package:digital_bricks/src/and_widget.dart';
 import 'package:digital_bricks/src/or_gate.dart';
@@ -9,6 +10,7 @@ import 'package:digital_bricks/src/oscillator.dart';
 import 'package:digital_bricks/src/oscillator_widget.dart';
 import 'package:digital_bricks/src/draggable_widget.dart';
 import 'package:digital_bricks/src/logic_component.dart';
+import 'package:digital_bricks/src/settings_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -103,6 +105,50 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'Digital Bricks',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              title: const Text('Settings'),
+              onTap: () {
+                // Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('About'),
+              onTap: () {
+                // Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AboutPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         title: Text(widget.title),
         centerTitle: true,
