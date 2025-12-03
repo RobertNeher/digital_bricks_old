@@ -8,6 +8,8 @@ Simulation of logical circuits.
 
 * Flip-flop types
 ![alt text](/assets/b994dc405860bca8b1bf8c848fe84cc9.jpg "Flip-flop types")
+* Pre-defined logic circuits: NOT (Inverter), AND, OR, XOR, NAND, NOR, NXOR: Each with flexible number of inputs
+* Flip-flop
 * Oscillator
 * 7 or 16 segment display
 * keyboard entry (4, 7 or 8 bit)
