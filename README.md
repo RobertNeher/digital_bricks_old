@@ -3,7 +3,7 @@
 Simulation of logical circuits.
 
 ## Features
-* Pre-defined logic circuits: AND, OR, XOR, NAND, NOR, NXOR: Each with flexible number of inputs
+* Pre-defined logic circuits: NOT (Inverter), AND, OR, XOR, NAND, NOR, NXOR: Each with flexible number of inputs
 * Flip-flop
 * Oscillator
 * 7 or 16 segment display
