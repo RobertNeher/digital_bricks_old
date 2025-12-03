@@ -1,5 +1,5 @@
 import 'package:digital_bricks/src/components/and_gate.dart';
-import 'package:digital_bricks/src/logic_pin.dart';
+import 'package:digital_bricks/src/components/logic_pin.dart';
 import 'package:digital_bricks/src/components/or_gate.dart';
 import 'package:digital_bricks/src/components/oscillator.dart';
 import 'package:flutter/material.dart';

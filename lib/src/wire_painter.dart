@@ -1,5 +1,5 @@
 import 'package:digital_bricks/src/wire.dart';
-import 'package:digital_bricks/src/logic_component.dart';
+import 'package:digital_bricks/src/components/logic_component.dart';
 import 'package:flutter/material.dart';
 
 class WirePainter extends CustomPainter {

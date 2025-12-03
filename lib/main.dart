@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:digital_bricks/src/about_page.dart';
+import 'package:digital_bricks/src/pages/about_page.dart';
 import 'package:digital_bricks/src/components/and_gate.dart';
 import 'package:digital_bricks/src/components/and_widget.dart';
 import 'package:digital_bricks/src/components/or_gate.dart';
@@ -9,8 +9,8 @@ import 'package:digital_bricks/src/components/or_widget.dart';
 import 'package:digital_bricks/src/components/oscillator.dart';
 import 'package:digital_bricks/src/components/oscillator_widget.dart';
 import 'package:digital_bricks/src/draggable_widget.dart';
-import 'package:digital_bricks/src/logic_component.dart';
-import 'package:digital_bricks/src/settings_page.dart';
+import 'package:digital_bricks/src/components/logic_component.dart';
+import 'package:digital_bricks/src/pages/settings_page.dart';
 import 'package:digital_bricks/src/wire.dart';
 import 'package:digital_bricks/src/wire_painter.dart';
 import 'package:flutter/material.dart';
