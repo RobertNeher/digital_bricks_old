@@ -1,4 +1,4 @@
-import 'package:digital_bricks/src/and_gate.dart';
+import 'package:digital_bricks/src/components/and_gate.dart';
 import 'package:flutter/material.dart';
 
 class AndWidget extends StatelessWidget {

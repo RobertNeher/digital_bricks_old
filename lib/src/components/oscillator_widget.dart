@@ -1,4 +1,4 @@
-import 'package:digital_bricks/src/oscillator.dart';
+import 'package:digital_bricks/src/components/oscillator.dart';
 import 'package:flutter/material.dart';
 
 class OscillatorWidget extends StatelessWidget {
