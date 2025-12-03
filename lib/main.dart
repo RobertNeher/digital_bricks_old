@@ -42,6 +42,7 @@ class GateDemoPage extends StatefulWidget {
 class _AndGateDemoPageState extends State<GateDemoPage> {
   final List<LogicComponent> _components = [];
   int _idCounter = 0;
+  double _minDistance = 50.0;
 
   @override
   void initState() {
@@ -57,6 +58,51 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
     setState(() {
       _components.add(component);
     });
+  }
+
+  void _repositionComponents() {
+    bool moved;
+    int iterations = 0;
+    const int maxIterations = 100;
+
+    do {
+      moved = false;
+      iterations++;
+      for (int i = 0; i < _components.length; i++) {
+        for (int j = i + 1; j < _components.length; j++) {
+          final c1 = _components[i];
+          final c2 = _components[j];
+
+          // Simple distance check (center to center approx)
+          // Assuming component size roughly 100x100 for simplicity of center calculation
+          // Better approach: Use actual bounds if available, but center-center is a good start
+          final center1 = c1.position + const Offset(50, 50);
+          final center2 = c2.position + const Offset(50, 50);
+
+          final distance = (center1 - center2).distance;
+
+          // Minimum required distance (size + buffer)
+          // Assuming size is approx 100, so min center-center distance should be 100 + _minDistance
+          // Actually, let's treat _minDistance as the gap between edges.
+          // If size is 100, then min center distance = 100 + _minDistance
+          final minCenterDist = 100.0 + _minDistance;
+
+          if (distance < minCenterDist) {
+            // Move them apart
+            final direction = (center1 - center2).direction;
+            final moveDist = (minCenterDist - distance) / 2;
+
+            final moveVec = Offset.fromDirection(direction, moveDist);
+
+            setState(() {
+              c1.position += moveVec;
+              c2.position -= moveVec;
+            });
+            moved = true;
+          }
+        }
+      }
+    } while (moved && iterations < maxIterations);
   }
 
   String _generateId(String prefix) {
@@ -124,14 +170,20 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
             ),
             ListTile(
               title: const Text('Settings'),
-              onTap: () {
-                // Navigator.pop(context);
-                Navigator.push(
+              onTap: () async {
+                Navigator.pop(context);
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const SettingsPage(),
+                    builder: (context) =>
+                        SettingsPage(minDistance: _minDistance),
                   ),
                 );
+                if (result != null && result is double) {
+                  setState(() {
+                    _minDistance = result;
+                  });
+                }
               },
             ),
             ListTile(
@@ -153,6 +205,11 @@ class _AndGateDemoPageState extends State<GateDemoPage> {
         title: Text(widget.title),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.grid_view),
+            onPressed: _repositionComponents,
+            tooltip: 'Reposition Components',
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveCircuit,
