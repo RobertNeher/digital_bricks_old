@@ -15,6 +15,7 @@ enum ComponentType {
   segment7,
   segment16,
   constantSource,
+  dFlipFlop,
 }
 
 abstract class LogicComponent {

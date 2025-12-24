@@ -53,14 +53,68 @@ class GatePainter extends CustomPainter {
         break;
       case ComponentType.constantSource:
         _drawBox(path, size);
-        // Draw V or G symbol or just text?
-        // Text is hard in CustomPainter without TextPainter.
-        // Let's draw a small '1' or '0' shape or just a circle.
-        // Actually, ComponentWidget can render the text state.
+        break;
+      case ComponentType.dFlipFlop:
+        _drawBox(path, size);
+        _drawDFFSymbols(canvas, size); // Custom drawing for labels/clock
         break;
     }
 
     canvas.drawPath(path, paint);
+  }
+
+  void _drawDFFSymbols(Canvas canvas, Size size) {
+    // Clock Triangle on Input 1
+    // Input 0 is D (top-ish), Input 1 is Clock (bottom-ish)
+    // CircuitBoard layout puts inputs evenly spaced.
+    // D-FF has 2 inputs. pos 1 and 2.
+    // Wait, WirePainter calculates pos based on count.
+
+    // Draw Text Labels "D", "Q", "Qbar"
+    // Just manual offsets for simplicity
+
+    final textPaint = TextPainter(textDirection: TextDirection.ltr);
+
+    // D label
+    textPaint.text = const TextSpan(
+      text: 'D',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.25 - 5));
+
+    // Clock Triangle
+    Path tri = Path();
+    double clkY = size.height * 0.75;
+    tri.moveTo(0, clkY - 5);
+    tri.lineTo(8, clkY);
+    tri.lineTo(0, clkY + 5);
+    canvas.drawPath(
+      tri,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    // Q label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+
+    // Q_not label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 10,
+        decoration: TextDecoration.overline,
+      ),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
   }
 
   void _drawAnd(Path path, Size size) {

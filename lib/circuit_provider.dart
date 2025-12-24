@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'models/logic_component.dart';
 import 'models/gates.dart';
 import 'models/io_devices.dart';
+import 'models/memory.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
 import 'utils/file_ops.dart';
@@ -281,9 +282,15 @@ class CircuitProvider extends ChangeNotifier {
         bool state = json['state'] ?? true;
         comp = ConstantSource(id: id, position: pos, state: state);
         break;
+      case ComponentType.dFlipFlop:
+        comp = DFlipFlop(id: id, position: pos);
+        if (json.containsKey('storedValue')) {
+          (comp as DFlipFlop).setStoredValue(json['storedValue']);
+        }
+        break;
     }
 
-    return comp!;
+    return comp;
   }
 
   void addComponentByType(ComponentType type, Offset pos) {
@@ -327,11 +334,12 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.constantSource:
         comp = ConstantSource(id: id, position: pos);
         break;
+      case ComponentType.dFlipFlop:
+        comp = DFlipFlop(id: id, position: pos);
+        break;
     }
 
-    if (comp != null) {
-      addComponent(comp);
-    }
+    addComponent(comp!);
   }
 
   void refresh() {
