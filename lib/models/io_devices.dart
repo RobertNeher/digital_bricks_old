@@ -1,10 +1,10 @@
-import 'dart:async';
+// import 'dart:async';
 import 'package:flutter/material.dart';
 import 'logic_component.dart';
 
 class Oscillator extends LogicComponent {
   double frequency; // in Hz
-  Timer? _timer;
+  // Timer? _timer;
   bool _isOn = false;
 
   Oscillator({super.id, required super.position, this.frequency = 1.0})

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 import 'package:uuid/uuid.dart';
 
 import 'models/logic_component.dart';
@@ -10,6 +10,7 @@ import 'models/gates.dart';
 import 'models/io_devices.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
+import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
   List<LogicComponent> components = [];
@@ -138,27 +139,79 @@ class CircuitProvider extends ChangeNotifier {
 
   // --- Save / Load ---
 
-  Future<void> saveCircuit() async {
-    String? outputFile = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Circuit',
-      fileName: 'circuit.json',
-    );
+  String? currentFilePath;
 
-    if (outputFile != null) {
-      final jsonMap = {
-        'components': components.map((c) => c.toJson()).toList(),
-        'connections': connections.map((c) => c.toJson()).toList(),
-      };
-      await File(outputFile).writeAsString(jsonEncode(jsonMap));
+  // Generic save: requires currentFilePath or prompts user
+  Future<void> saveCurrentCircuit() async {
+    if (currentFilePath != null) {
+      await saveCircuitToPath(currentFilePath!);
+    } else {
+      await saveCircuitAs();
     }
+  }
+
+  Future<void> saveCircuitAs() async {
+    // Web: FilePicker.saveFile is not useful for path selection. Just trigger download.
+    if (kIsWeb) {
+      debugPrint(
+        "saveCircuitAs: Web detected, skipping picker and downloading...",
+      );
+      await saveCircuitToPath("circuit.json");
+      return;
+    }
+
+    // Desktop/Mobile: Use FilePicker
+    debugPrint("saveCircuitAs: requesting save file dialog...");
+    try {
+      String? initialDir = await FileOps.getAssetsDirectory();
+      debugPrint("saveCircuitAs: using initialDir: $initialDir");
+
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Circuit As',
+        fileName: 'circuit.json',
+        initialDirectory: initialDir,
+      );
+      debugPrint("saveCircuitAs: dialog returned: $outputFile");
+
+      if (outputFile != null) {
+        currentFilePath = outputFile;
+        await saveCircuitToPath(outputFile);
+      } else {
+        debugPrint("saveCircuitAs: cancelled by user");
+      }
+    } catch (e) {
+      debugPrint("saveCircuitAs: ERROR: $e");
+      // Fallback: try without initialDirectory if it failed?
+      // But we can't retry easily inside the same flow without user action usually.
+    }
+  }
+
+  Future<void> saveCircuitToPath(String path) async {
+    debugPrint("saveCircuitToPath: saving to $path");
+    final jsonMap = {
+      'components': components.map((c) => c.toJson()).toList(),
+      'connections': connections.map((c) => c.toJson()).toList(),
+    };
+    String content = jsonEncode(jsonMap);
+    debugPrint(
+      "saveCircuitToPath: encoding complete, writing using FileOps...",
+    );
+    await FileOps.saveFileToPath(path, content);
+    debugPrint("saveCircuitToPath: write complete");
   }
 
   Future<void> loadCircuit() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
-      File file = File(result.files.single.path!);
-      String content = await file.readAsString();
+      PlatformFile pFile = result.files.single;
+      if (pFile.path != null) {
+        currentFilePath = pFile.path;
+      }
+
+      String content = await FileOps.readFile(pFile);
+      if (content.isEmpty) return; // or handle error
+
       Map<String, dynamic> jsonMap = jsonDecode(content);
 
       components.clear();

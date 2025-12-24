@@ -18,11 +18,52 @@ class MainScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
+            onPressed: () {
+              final provider = Provider.of<CircuitProvider>(
+                context,
+                listen: false,
+              );
+              if (provider.currentFilePath != null) {
+                // Show confirmation
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Confirm Overwrite"),
+                    content: Text(
+                      "Overwrite current file?\n${provider.currentFilePath}",
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx); // Cancel
+                          // Maybe open Save As?
+                          provider.saveCircuitAs();
+                        },
+                        child: const Text("Save As..."),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          provider.saveCurrentCircuit();
+                        },
+                        child: const Text("Overwrite"),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                provider.saveCircuitAs();
+              }
+            },
+            tooltip: "Save Circuit",
+          ),
+          IconButton(
+            icon: const Icon(Icons.save_as),
             onPressed: () => Provider.of<CircuitProvider>(
               context,
               listen: false,
-            ).saveCircuit(),
-            tooltip: "Save Circuit",
+            ).saveCircuitAs(),
+            tooltip: "Save As",
           ),
           IconButton(
             icon: const Icon(Icons.folder_open),
