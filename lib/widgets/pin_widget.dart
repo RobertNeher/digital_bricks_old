@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/pin.dart';
+import '../models/connection.dart';
 import '../circuit_provider.dart';
 
 class PinWidget extends StatelessWidget {
@@ -14,6 +15,22 @@ class PinWidget extends StatelessWidget {
     // We can assume red = true, gray/black = false
     Color color = pin.value ? Colors.red : Colors.grey;
 
+    final provider = Provider.of<CircuitProvider>(context);
+    Connection? inputConnection;
+
+    if (pin.type == PinType.input) {
+      try {
+        inputConnection = provider.connections.firstWhere(
+          (c) => c.targetPinId == pin.id,
+        );
+      } catch (_) {}
+    }
+
+    String dragData = pin.id;
+    if (inputConnection != null) {
+      dragData = inputConnection.sourcePinId;
+    }
+
     return DragTarget<String>(
       onWillAccept: (data) =>
           data != null && data != pin.id, // Can't connect to self
@@ -25,7 +42,15 @@ class PinWidget extends StatelessWidget {
       },
       builder: (context, candidateData, rejectedData) {
         return Draggable<String>(
-          data: pin.id,
+          data: dragData,
+          onDragStarted: () {
+            if (inputConnection != null) {
+              Provider.of<CircuitProvider>(
+                context,
+                listen: false,
+              ).removeConnection(inputConnection.id);
+            }
+          },
           feedback: Container(
             width: 15,
             height: 15,
@@ -36,7 +61,7 @@ class PinWidget extends StatelessWidget {
           ),
           child: Container(
             width: 12, // Hit box size
-            height: 12,
+            height: 12, // Hit box size
             decoration: BoxDecoration(
               color: candidateData.isNotEmpty ? Colors.blue : color,
               shape: BoxShape.circle,
