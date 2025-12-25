@@ -16,6 +16,7 @@ enum ComponentType {
   segment16,
   constantSource,
   dFlipFlop,
+  custom, // Integrated Circuit
 }
 
 abstract class LogicComponent {
@@ -25,6 +26,10 @@ abstract class LogicComponent {
   ComponentType type;
   List<Pin> inputs = [];
   List<Pin> outputs = [];
+
+  // For Unpack/Repack tracking
+  String? icGroupId;
+  String? icBlueprintName;
 
   // Base constructor
   LogicComponent({

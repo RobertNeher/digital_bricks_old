@@ -58,6 +58,13 @@ class GatePainter extends CustomPainter {
         _drawBox(path, size);
         _drawDFFSymbols(canvas, size); // Custom drawing for labels/clock
         break;
+      case ComponentType.custom:
+        // Handled by ComponentWidget specifically with a Container
+        // We leave path empty or maybe draw a box border here?
+        // Let's draw a box border to be safe
+        // _drawBox(path, size);
+        // Actually, ComponentWidget uses a Container with border.
+        break;
     }
 
     canvas.drawPath(path, paint);

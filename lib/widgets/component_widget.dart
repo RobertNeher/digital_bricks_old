@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../models/logic_component.dart';
 import '../models/gates.dart';
 import '../models/io_devices.dart';
+import '../models/integrated_circuit.dart';
 import '../circuit_provider.dart';
 import 'gate_painter.dart';
+import 'ic_painter.dart';
 import 'pin_widget.dart';
 import 'segment_display_painter.dart';
 import '../utils/segment_patterns.dart';
@@ -19,8 +21,11 @@ class ComponentWidget extends StatelessWidget {
     // Determine size based on inputs
     // Base height 60, but if inputs > 3, grow.
     double height = 60.0;
-    if (component.inputs.length > 3) {
-      height = component.inputs.length * 20.0;
+    int maxPins = component.inputs.length > component.outputs.length
+        ? component.inputs.length
+        : component.outputs.length;
+    if (maxPins > 3) {
+      height = maxPins * 20.0;
     }
     double width = 60.0;
     if (component is SegmentDisplay) {
@@ -138,6 +143,54 @@ class ComponentWidget extends StatelessWidget {
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        // For IntegratedCircuit
+                        if (component is IntegratedCircuit)
+                          Center(
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.blueGrey[100],
+                                border: Border.all(color: Colors.black),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(2.0),
+                                      child: CustomPaint(
+                                        painter: ICPainter(
+                                          (component as IntegratedCircuit)
+                                              .internalComponents,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Center(
+                                    child: Container(
+                                      color: Colors.white.withOpacity(0.7),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      child: Text(
+                                        (component as IntegratedCircuit)
+                                            .blueprint
+                                            .name,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -288,6 +341,36 @@ class ComponentWidget extends StatelessWidget {
                 },
               ),
             ],
+            if (component is IntegratedCircuit)
+              ListTile(
+                leading: const Icon(Icons.open_in_full),
+                title: const Text('Unpack Circuit'),
+                onTap: () {
+                  Provider.of<CircuitProvider>(
+                    context,
+                    listen: false,
+                  ).unpackIntegratedCircuit(component as IntegratedCircuit);
+                  Navigator.pop(ctx);
+                },
+              ),
+            // Debug info
+            // ListTile(title: Text("Grp: ${component.icGroupId}, BP: ${component.icBlueprintName}")),
+            if (component.icGroupId != null &&
+                component.icBlueprintName != null)
+              ListTile(
+                leading: const Icon(Icons.compress),
+                title: Text('Repack ${component.icBlueprintName}'),
+                onTap: () {
+                  Provider.of<CircuitProvider>(
+                    context,
+                    listen: false,
+                  ).repackIntegratedCircuit(
+                    component.icGroupId!,
+                    component.icBlueprintName!,
+                  );
+                  Navigator.pop(ctx);
+                },
+              ),
           ],
         );
       },

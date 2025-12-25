@@ -12,6 +12,7 @@ import 'models/memory.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
 import 'models/saved_circuit.dart';
+import 'models/integrated_circuit.dart';
 import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
@@ -406,6 +407,10 @@ class CircuitProvider extends ChangeNotifier {
           (comp as DFlipFlop).setStoredValue(json['storedValue']);
         }
         break;
+      case ComponentType.custom:
+        SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
+        comp = IntegratedCircuit(id: id, position: pos, blueprint: bp);
+        break;
     }
 
     return comp;
@@ -455,6 +460,9 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.dFlipFlop:
         comp = DFlipFlop(id: id, position: pos);
         break;
+      case ComponentType.custom:
+        // Cannot add undefined custom component directly by type
+        return;
     }
 
     addComponent(comp!);
@@ -498,7 +506,34 @@ class CircuitProvider extends ChangeNotifier {
       return sourceIn && targetIn;
     }).toList();
 
-    // 3. Normalize position
+    // 3. Identify Ports (Unconnected internal pins)
+    // Input Ports: Input pins compliant with selection but NOT a target of any internal connection
+    List<String> inputPorts = [];
+    for (var c in selectedComps) {
+      for (var p in c.inputs) {
+        bool isTarget = internalConnections.any(
+          (conn) => conn.targetPinId == p.id,
+        );
+        if (!isTarget) {
+          inputPorts.add(p.id);
+        }
+      }
+    }
+
+    // Output Ports: Output pins compliant with selection but NOT a source of any internal connection
+    List<String> outputPorts = [];
+    for (var c in selectedComps) {
+      for (var p in c.outputs) {
+        bool isSource = internalConnections.any(
+          (conn) => conn.sourcePinId == p.id,
+        );
+        if (!isSource) {
+          outputPorts.add(p.id);
+        }
+      }
+    }
+
+    // 4. Normalize position
     // Find top-left
     double minX = double.infinity;
     double minY = double.infinity;
@@ -523,6 +558,8 @@ class CircuitProvider extends ChangeNotifier {
       name: name,
       components: compJson,
       connections: connJson,
+      inputPorts: inputPorts,
+      outputPorts: outputPorts,
     );
 
     customCircuits.add(blueprint);
@@ -530,52 +567,13 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void instantiateCustomCircuit(SavedCircuit blueprint, Offset dropPos) {
-    // We need to map Old IDs -> New IDs to reconstruct connections accurately
-    Map<String, String> idMap = {}; // oldId -> newId
-
-    // 1. Create Components
-    for (var compData in blueprint.components) {
-      String oldId = compData['id'];
-      String newId = const Uuid().v4();
-      idMap[oldId] = newId;
-
-      // Create new component copy
-      // We deserialized logic is in _deserializeComponent but that expects exact IDs?
-      // Actually _deserializeComponent takes the JSON. We can modify the JSON 'id' and 'position' before passing it.
-
-      Map<String, dynamic> newJson = Map.from(compData);
-      newJson['id'] = newId;
-      newJson['position_dx'] = (compData['position_dx'] as double) + dropPos.dx;
-      newJson['position_dy'] = (compData['position_dy'] as double) + dropPos.dy;
-
-      LogicComponent newComp = _deserializeComponent(newJson);
-      components.add(newComp);
-    }
-
-    // 2. Create Connections
-    for (var connData in blueprint.connections) {
-      String oldSourcePin = connData['sourcePinId'];
-      String oldTargetPin = connData['targetPinId'];
-
-      // Resolve new pin IDs
-      // Pin ID format: "compId-pinIndex" ??
-      // Actually PinWidget uses pin.id.
-      // If pin IDs are constructed as "$compId-$index", we can reconstruct them.
-      // But let's check how Pin IDs are generated. LogicComponent generates them in constructor or addInputPin?
-      // LogicComponent:
-      //  addInputPin() -> inputs.add(Pin(..., id: "$id-in-$index"))
-      // So yes, they are deterministic based on ComponentID.
-
-      // Parse old IDs to find pin index or suffix
-      String newSourcePin = _remapPinId(oldSourcePin, idMap);
-      String newTargetPin = _remapPinId(oldTargetPin, idMap);
-
-      if (newSourcePin.isNotEmpty && newTargetPin.isNotEmpty) {
-        addConnection(newSourcePin, newTargetPin);
-      }
-    }
-
-    notifyListeners();
+    String id = const Uuid().v4();
+    IntegratedCircuit ic = IntegratedCircuit(
+      id: id,
+      position: dropPos,
+      blueprint: blueprint,
+    );
+    addComponent(ic);
   }
 
   void renameCustomCircuit(SavedCircuit oldCircuit, String newName) {
@@ -585,6 +583,8 @@ class CircuitProvider extends ChangeNotifier {
         name: newName,
         components: oldCircuit.components,
         connections: oldCircuit.connections,
+        inputPorts: oldCircuit.inputPorts,
+        outputPorts: oldCircuit.outputPorts,
       );
       customCircuits[index] = newCircuit;
       notifyListeners();
@@ -596,18 +596,211 @@ class CircuitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _remapPinId(String oldPinId, Map<String, String> idMap) {
-    // Attempt to find the component ID prefix
-    // oldPinId could be "d23a...-in-0"
-    // We iterate idMap to find which oldCompId is a prefix of oldPinId
-    for (var entry in idMap.entries) {
-      String oldCompId = entry.key;
-      if (oldPinId.startsWith(oldCompId)) {
-        String suffix = oldPinId.substring(oldCompId.length);
-        return "${entry.value}$suffix";
+  void unpackIntegratedCircuit(IntegratedCircuit ic) {
+    debugPrint("Unpacking IC: ${ic.id}, Blueprint: ${ic.blueprint.name}");
+
+    // 1. Capture external connections BEFORE removing IC
+    List<Connection> incoming = [];
+    List<Connection> outgoing = [];
+
+    // We need to iterate a copy because we might modify connections? No, just reading.
+    for (var conn in connections) {
+      if (conn.targetPinId.startsWith(ic.id)) incoming.add(conn);
+      if (conn.sourcePinId.startsWith(ic.id)) outgoing.add(conn);
+    }
+
+    // 2. Remove IC from components list (without triggering connection removal yet)
+    components.remove(ic);
+
+    // 3. Remove the OLD connections to the IC from the list
+    // (we will add replacements, so we remove the objects that point to IC pins)
+    for (var c in incoming) connections.remove(c);
+    for (var c in outgoing) connections.remove(c);
+
+    // 4. Add Internal Components
+    String groupId = const Uuid().v4();
+    debugPrint("Generated Group ID: $groupId");
+
+    for (var comp in ic.internalComponents) {
+      // Internal components have relative positions. Make them absolute.
+      // We need to create COPIES because the instances in IC might be reused if we re-save?
+      // Actually, once exploded, the IC is gone. We can reuse the instances.
+      // BUT we need to update their positions.
+      comp.position += ic.position;
+      comp.icGroupId = groupId;
+      comp.icBlueprintName = ic.blueprint.name;
+      debugPrint(
+        "Setting component ${comp.id} group to $groupId, BP: ${ic.blueprint.name}",
+      );
+      components.add(comp);
+    }
+
+    // 5. Add Internal Connections
+    connections.addAll(ic.internalConnections);
+
+    // 6. Reconnect External Wires
+    for (var conn in incoming) {
+      String? internalPinId = ic.inputMap[conn.targetPinId];
+      if (internalPinId != null) {
+        addConnection(conn.sourcePinId, internalPinId);
       }
     }
-    return "";
+
+    for (var conn in outgoing) {
+      String? internalPinId = ic.outputMap[conn.sourcePinId];
+      if (internalPinId != null) {
+        addConnection(internalPinId, conn.targetPinId);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  void repackIntegratedCircuit(String groupId, String blueprintName) {
+    // 1. Identify components
+    List<LogicComponent> groupComps = components
+        .where((c) => c.icGroupId == groupId)
+        .toList();
+
+    if (groupComps.isEmpty) return;
+
+    // 2. Identify internal connections
+    // A connection is internal if both ends are on components in this group
+    List<Connection> internalConnections = connections.where((conn) {
+      bool sourceIn = groupComps.any((c) => conn.sourcePinId.startsWith(c.id));
+      bool targetIn = groupComps.any((c) => conn.targetPinId.startsWith(c.id));
+      return sourceIn && targetIn;
+    }).toList();
+
+    // 3. Identify Ports (Scanning anew allows interface changes)
+    List<String> inputPorts = [];
+    for (var c in groupComps) {
+      for (var p in c.inputs) {
+        bool isTarget = internalConnections.any(
+          (conn) => conn.targetPinId == p.id,
+        );
+        if (!isTarget) inputPorts.add(p.id);
+      }
+    }
+
+    List<String> outputPorts = [];
+    for (var c in groupComps) {
+      for (var p in c.outputs) {
+        bool isSource = internalConnections.any(
+          (conn) => conn.sourcePinId == p.id,
+        );
+        if (!isSource) outputPorts.add(p.id);
+      }
+    }
+
+    // 4. Normalize
+    double minX = double.infinity;
+    double minY = double.infinity;
+    for (var c in groupComps) {
+      if (c.position.dx < minX) minX = c.position.dx;
+      if (c.position.dy < minY) minY = c.position.dy;
+    }
+
+    List<Map<String, dynamic>> compJson = groupComps.map((c) {
+      var json = c.toJson();
+      json['position_dx'] = c.position.dx - minX;
+      json['position_dy'] = c.position.dy - minY;
+      return json;
+    }).toList();
+
+    List<Map<String, dynamic>> connJson = internalConnections
+        .map((c) => c.toJson())
+        .toList();
+
+    // 5. Update or Create Blueprint
+    SavedCircuit newBlueprint = SavedCircuit(
+      name: blueprintName,
+      components: compJson,
+      connections: connJson,
+      inputPorts: inputPorts,
+      outputPorts: outputPorts,
+    );
+
+    int existingIdx = customCircuits.indexWhere((c) => c.name == blueprintName);
+    if (existingIdx != -1) {
+      customCircuits[existingIdx] = newBlueprint;
+    } else {
+      customCircuits.add(newBlueprint);
+    }
+
+    // 6. Instantiate new IC
+    // We use the top-left of the group as the IC position
+    Offset icPos = Offset(minX, minY);
+    String icId = const Uuid().v4();
+    IntegratedCircuit ic = IntegratedCircuit(
+      id: icId,
+      position: icPos,
+      blueprint: newBlueprint,
+    );
+
+    // 7. Reconnect External Connections
+    // We need to map [Old Component Pin ID] -> [New IC Pin ID]
+    // The Input Ports list is ordered, so IC inputs are id-in-0, id-in-1...
+    // The logic matches inputPorts[i] (which is Old Pin ID) to id-in-i
+
+    // Find connections that link [User World] <-> [Group Component]
+    // Incoming: World -> Group Component Pin (must be in inputPorts)
+    List<Connection> incoming = connections.where((conn) {
+      bool sourceOutside = !groupComps.any(
+        (c) => conn.sourcePinId.startsWith(c.id),
+      );
+      bool targetInside = groupComps.any(
+        (c) => conn.targetPinId.startsWith(c.id),
+      );
+      return sourceOutside && targetInside;
+    }).toList();
+
+    // Outgoing: Group Component Pin (must be in outputPorts) -> World
+    List<Connection> outgoing = connections.where((conn) {
+      bool sourceInside = groupComps.any(
+        (c) => conn.sourcePinId.startsWith(c.id),
+      );
+      bool targetOutside = !groupComps.any(
+        (c) => conn.targetPinId.startsWith(c.id),
+      );
+      return sourceInside && targetOutside;
+    }).toList();
+
+    // Clean up old components and connections
+    for (var c in groupComps) components.remove(c);
+    // remove connections involving them
+    connections.removeWhere((conn) {
+      return groupComps.any(
+        (c) =>
+            conn.sourcePinId.startsWith(c.id) ||
+            conn.targetPinId.startsWith(c.id),
+      );
+    });
+
+    // Add IC
+    components.add(ic);
+
+    // Rebuild external connections
+    // Incoming
+    for (var conn in incoming) {
+      // conn.targetPinId was the internal pin. Find its index in inputPorts.
+      int portIndex = inputPorts.indexOf(conn.targetPinId);
+      if (portIndex != -1) {
+        String icPinId = "$icId-in-$portIndex";
+        addConnection(conn.sourcePinId, icPinId);
+      }
+    }
+
+    // Outgoing
+    for (var conn in outgoing) {
+      int portIndex = outputPorts.indexOf(conn.sourcePinId);
+      if (portIndex != -1) {
+        String icPinId = "$icId-out-$portIndex";
+        addConnection(icPinId, conn.targetPinId);
+      }
+    }
+
+    notifyListeners();
   }
 
   void refresh() {
