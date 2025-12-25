@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/connection.dart';
 import '../models/logic_component.dart';
-import '../models/gates.dart';
+// import '../models/gates.dart';
 import '../models/io_devices.dart';
 
 class WirePainter extends CustomPainter {

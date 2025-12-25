@@ -63,12 +63,19 @@ class Led extends LogicComponent {
 
 class SegmentDisplay extends LogicComponent {
   int segments; // 7 or 16
+  int color;
+  double fontSize;
 
-  SegmentDisplay({super.id, required super.position, this.segments = 7})
-    : super(
-        name: '${segments}-Seg',
-        type: segments == 7 ? ComponentType.segment7 : ComponentType.segment16,
-      ) {
+  SegmentDisplay({
+    super.id,
+    required super.position,
+    this.segments = 7,
+    this.color = 0xFF4CAF50, // Green
+    this.fontSize = 24.0,
+  }) : super(
+         name: '${segments}-Seg',
+         type: segments == 7 ? ComponentType.segment7 : ComponentType.segment16,
+       ) {
     if (segments == 7) {
       // 4 inputs for Hex decoding (0-F)
       for (int i = 0; i < 4; i++) addInputPin();
@@ -100,6 +107,8 @@ class SegmentDisplay extends LogicComponent {
   Map<String, dynamic> toJson() {
     final json = super.toJson();
     json['segments'] = segments;
+    json['color'] = color;
+    json['fontSize'] = fontSize;
     return json;
   }
 }

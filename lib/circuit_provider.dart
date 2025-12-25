@@ -19,7 +19,9 @@ class CircuitProvider extends ChangeNotifier {
   Timer? _simulationTimer;
 
   // Simulation constants
+  // Simulation constants
   static const int _tickRateMs = 50; // 20Hz update rate for UI/Sim
+  static const double gridSize = 20.0;
 
   CircuitProvider() {
     _startSimulation();
@@ -135,6 +137,89 @@ class CircuitProvider extends ChangeNotifier {
 
   void removeConnection(String connectionId) {
     connections.removeWhere((c) => c.id == connectionId);
+    notifyListeners();
+  }
+
+  // --- Selection ---
+  final Set<String> selectedComponentIds = {};
+
+  void selectComponent(String id, {bool additive = false}) {
+    if (!additive) {
+      selectedComponentIds.clear();
+    }
+    selectedComponentIds.add(id);
+    notifyListeners();
+  }
+
+  void deselectComponent(String id) {
+    selectedComponentIds.remove(id);
+    notifyListeners();
+  }
+
+  void toggleComponentSelection(String id) {
+    if (selectedComponentIds.contains(id)) {
+      selectedComponentIds.remove(id);
+    } else {
+      selectedComponentIds.add(id);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    if (selectedComponentIds.isNotEmpty) {
+      selectedComponentIds.clear();
+      notifyListeners();
+    }
+  }
+
+  bool isSelected(String id) => selectedComponentIds.contains(id);
+
+  // --- Bulk Actions ---
+
+  void deleteSelectedComponents() {
+    if (selectedComponentIds.isEmpty) return;
+
+    // Create a copy to iterate safely
+    final idsToRemove = Set<String>.from(selectedComponentIds);
+
+    for (var id in idsToRemove) {
+      removeComponent(id);
+    }
+    selectedComponentIds.clear();
+    notifyListeners();
+  }
+
+  void alignSelectedComponents(String axis) {
+    if (selectedComponentIds.length < 2) return;
+
+    List<LogicComponent> selected = components
+        .where((c) => selectedComponentIds.contains(c.id))
+        .toList();
+
+    if (selected.isEmpty) return;
+
+    if (axis == 'left') {
+      double minX = selected
+          .map((c) => c.position.dx)
+          .reduce((a, b) => a < b ? a : b);
+      for (var c in selected) c.position = Offset(minX, c.position.dy);
+    } else if (axis == 'right') {
+      double maxX = selected
+          .map((c) => c.position.dx)
+          .reduce((a, b) => a > b ? a : b);
+      for (var c in selected) c.position = Offset(maxX, c.position.dy);
+    } else if (axis == 'top') {
+      double minY = selected
+          .map((c) => c.position.dy)
+          .reduce((a, b) => a < b ? a : b);
+      for (var c in selected) c.position = Offset(c.position.dx, minY);
+    } else if (axis == 'bottom') {
+      double maxY = selected
+          .map((c) => c.position.dy)
+          .reduce((a, b) => a > b ? a : b);
+      for (var c in selected) c.position = Offset(c.position.dx, maxY);
+    }
+
     notifyListeners();
   }
 
@@ -273,10 +358,22 @@ class CircuitProvider extends ChangeNotifier {
         );
         break;
       case ComponentType.segment7:
-        comp = SegmentDisplay(id: id, position: pos, segments: 7);
+        comp = SegmentDisplay(
+          id: id,
+          position: pos,
+          segments: 7,
+          color: json['color'] ?? 0xFF4CAF50,
+          fontSize: json['fontSize'] ?? 24.0,
+        );
         break;
       case ComponentType.segment16:
-        comp = SegmentDisplay(id: id, position: pos, segments: 16);
+        comp = SegmentDisplay(
+          id: id,
+          position: pos,
+          segments: 16,
+          color: json['color'] ?? 0xFF4CAF50,
+          fontSize: json['fontSize'] ?? 24.0,
+        );
         break;
       case ComponentType.constantSource:
         bool state = json['state'] ?? true;

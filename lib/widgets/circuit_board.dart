@@ -6,6 +6,7 @@ import '../models/connection.dart';
 import '../models/io_devices.dart'; // For SegmentDisplay check
 import 'component_widget.dart';
 import 'wire_painter.dart';
+import 'grid_painter.dart';
 
 class CircuitBoard extends StatefulWidget {
   const CircuitBoard({super.key});
@@ -27,55 +28,125 @@ class _CircuitBoardState extends State<CircuitBoard> {
     const double canvasWidth = 2000;
     const double canvasHeight = 2000;
 
-    return ColoredBox(
-      color: Colors.white,
-      child: InteractiveViewer(
-        transformationController: _transformController,
-        boundaryMargin: const EdgeInsets.all(double.infinity),
-        minScale: 0.1,
-        maxScale: 4.0,
-        constrained: false,
-        child: GestureDetector(
-          onSecondaryTapUp: (details) {
-            _handleSecondaryTap(context, details.localPosition, provider);
-          },
-          child: DragTarget<ComponentType>(
-            onAcceptWithDetails: (details) {
-              _handleDrop(context, details.data, details.offset);
-            },
-            builder: (context, candidateData, rejectedData) {
-              return Container(
-                key: _canvasKey,
-                width: canvasWidth,
-                height: canvasHeight,
-                color: Colors.grey[200], // Fixed color
-                child: Stack(
-                  children: [
-                    // Wires (Bottom layer)
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: WirePainter(
-                          connections: provider.connections,
-                          components: provider.components,
+    return Stack(
+      children: [
+        ColoredBox(
+          color: Colors.white,
+          child: InteractiveViewer(
+            transformationController: _transformController,
+            boundaryMargin: const EdgeInsets.all(double.infinity),
+            minScale: 0.1,
+            maxScale: 4.0,
+            constrained: false,
+            child: GestureDetector(
+              onSecondaryTapUp: (details) {
+                _handleSecondaryTap(context, details.localPosition, provider);
+              },
+              onTap: () {
+                provider.clearSelection();
+              },
+              child: DragTarget<ComponentType>(
+                onAcceptWithDetails: (details) {
+                  _handleDrop(context, details.data, details.offset);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  return Container(
+                    key: _canvasKey,
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    color: Colors.grey[200], // Fixed color
+                    child: Stack(
+                      children: [
+                        // Grid (Bottom-most layer)
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: GridPainter(
+                              gridSize: CircuitProvider.gridSize,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
 
-                    // Components
-                    ...provider.components.map((comp) {
-                      return Positioned(
-                        left: comp.position.dx,
-                        top: comp.position.dy,
-                        child: ComponentWidget(component: comp),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              );
-            },
+                        // Wires (Bottom layer)
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: WirePainter(
+                              connections: provider.connections,
+                              components: provider.components,
+                            ),
+                          ),
+                        ),
+
+                        // Components
+                        ...provider.components.map((comp) {
+                          return Positioned(
+                            left: comp.position.dx,
+                            top: comp.position.dy,
+                            child: ComponentWidget(component: comp),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ),
-      ),
+        // Selection Toolbar (Overlay)
+        if (provider.selectedComponentIds.isNotEmpty)
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.align_horizontal_left),
+                      tooltip: "Align Left",
+                      onPressed: () => provider.alignSelectedComponents('left'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.align_vertical_top),
+                      tooltip: "Align Top",
+                      onPressed: () => provider.alignSelectedComponents('top'),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(width: 1, height: 24, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      tooltip: "Delete Selected",
+                      onPressed: () => provider.deleteSelectedComponents(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: "Clear Selection",
+                      onPressed: () => provider.clearSelection(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -209,14 +280,16 @@ class _CircuitBoardState extends State<CircuitBoard> {
         _canvasKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       final Offset localPos = renderBox.globalToLocal(dropPos);
-      // localPos is now relative to the Container's 0,0 (Top Left of 2000x2000 canvas).
-      // This includes the InteractiveViewer's transform automatically?
-      // Yes, globalToLocal traverses up the tree and applies inverses.
+
+      // Snap to grid
+      double gs = CircuitProvider.gridSize;
+      double snapX = (localPos.dx / gs).round() * gs;
+      double snapY = (localPos.dy / gs).round() * gs;
 
       Provider.of<CircuitProvider>(
         context,
         listen: false,
-      ).addComponentByType(type, localPos);
+      ).addComponentByType(type, Offset(snapX, snapY));
     }
   }
 }

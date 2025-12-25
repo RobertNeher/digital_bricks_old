@@ -28,21 +28,44 @@ class ComponentWidget extends StatelessWidget {
     }
 
     return GestureDetector(
+      onTap: () {
+        // Toggle selection
+        Provider.of<CircuitProvider>(
+          context,
+          listen: false,
+        ).toggleComponentSelection(component.id);
+      },
       onPanUpdate: (details) {
-        // Update position in model
-        // Note: details.delta is screen delta. InteractiveViewer scale might affect this?
-        // Usually InteractiveViewer handles the scale if this is a child.
-        // BUT, if we just update the model position, the parent Stack needs to rebuild.
-        // We need to account for scale if we want precise tracking, but for simple dragging,
-        // 1:1 delta usually feels "okay" if scale is 1. If zoomed out, it might feel slow.
-        // We can access transformation controller if needed, but let's stick to simple delta.
-        component.position += details.delta;
-        // Force rebuild of parent (CircuitBoard) or use ValueNotifier/Provider
-        // Since component.position is not "observable" easily, we call notifyListeners on Provider.
-        // Doing this on every frame is heavy.
-        // Better: Use a local ValueNotifier for drag, commit on end.
-        // For now: Call provider.nofity which is expensive but correct.
-        Provider.of<CircuitProvider>(context, listen: false).refresh();
+        final provider = Provider.of<CircuitProvider>(context, listen: false);
+
+        // If this component isn't selected, select it exclusively (drag logic usually)
+        // Or if it IS selected, move ALL selected.
+        if (!provider.isSelected(component.id)) {
+          // If dragging something unselected, select just it (classic behavior)
+          provider.selectComponent(component.id);
+        }
+
+        // Move all selected components
+        for (var id in provider.selectedComponentIds) {
+          var comp = provider.components.firstWhere((c) => c.id == id);
+          comp.position += details.delta;
+        }
+
+        provider.refresh();
+      },
+      onPanEnd: (details) {
+        final provider = Provider.of<CircuitProvider>(context, listen: false);
+        double gs = CircuitProvider.gridSize;
+
+        // Snap ALL selected components
+        for (var id in provider.selectedComponentIds) {
+          var comp = provider.components.firstWhere((c) => c.id == id);
+          double snapX = (comp.position.dx / gs).round() * gs;
+          double snapY = (comp.position.dy / gs).round() * gs;
+          comp.position = Offset(snapX, snapY);
+        }
+
+        provider.refresh();
       },
       onSecondaryTap: () {
         _showContextMenu(context);
@@ -60,51 +83,63 @@ class ComponentWidget extends StatelessWidget {
             ),
             // Body
             Expanded(
-              child: Stack(
-                children: [
-                  CustomPaint(
-                    painter: GatePainter(type: component.type),
-                    child: Container(),
-                  ),
-                  // For Segment Display, draw the content
-                  if (component is SegmentDisplay)
-                    Center(
-                      child: _buildSegmentDisplayContent(
-                        component as SegmentDisplay,
-                      ),
+              child: Consumer<CircuitProvider>(
+                builder: (context, provider, child) {
+                  bool isSelected = provider.isSelected(component.id);
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: isSelected
+                          ? Border.all(color: Colors.blueAccent, width: 2)
+                          : null,
                     ),
-                  // For LED, draw content
-                  if (component is Led)
-                    Center(
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: (component as Led).currentColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black),
+                    child: Stack(
+                      children: [
+                        CustomPaint(
+                          painter: GatePainter(type: component.type),
+                          child: Container(),
                         ),
-                      ),
-                    ),
-                  // For label
-                  Center(
-                    child: Text(
-                      component.name,
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  ),
-                  // For ConstantSource
-                  if (component is ConstantSource)
-                    Center(
-                      child: Text(
-                        (component as ConstantSource).state ? "1" : "0",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                        // For Segment Display, draw the content
+                        if (component is SegmentDisplay)
+                          Center(
+                            child: _buildSegmentDisplayContent(
+                              component as SegmentDisplay,
+                            ),
+                          ),
+                        // For LED, draw content
+                        if (component is Led)
+                          Center(
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: (component as Led).currentColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.black),
+                              ),
+                            ),
+                          ),
+                        // For label
+                        Center(
+                          child: Text(
+                            component.name,
+                            style: const TextStyle(fontSize: 10),
+                          ),
                         ),
-                      ),
+                        // For ConstantSource
+                        if (component is ConstantSource)
+                          Center(
+                            child: Text(
+                              (component as ConstantSource).state ? "1" : "0",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
+                  );
+                },
               ),
             ),
             // Outputs
@@ -122,17 +157,28 @@ class ComponentWidget extends StatelessWidget {
 
   Widget _buildSegmentDisplayContent(SegmentDisplay display) {
     int val = display.inputValue;
-    String text = val.toRadixString(16).toUpperCase();
+    String text = "";
     if (display.segments == 16) {
-      // Check if ascii? For now just hex raw
-      if (val < 127) text = String.fromCharCode(val);
+      // 7-bit ASCII mode
+      if (val >= 32 && val <= 126) {
+        text = String.fromCharCode(val);
+      } else {
+        // Fallback to Hex for non-printable controls sc
+        // so user sees *something* happens
+        text = "0x${val.toRadixString(16).toUpperCase()}";
+      }
+    } else {
+      // 7-segment (Hex mode)
+      text = val.toRadixString(16).toUpperCase();
     }
+
+    // Use configurable fontSize instead of FittedBox, as requested
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 24,
+      style: TextStyle(
+        fontSize: display.fontSize,
         fontWeight: FontWeight.bold,
-        color: Colors.green,
+        color: Color(display.color),
       ),
     );
   }
@@ -213,6 +259,24 @@ class ComponentWidget extends StatelessWidget {
                   _showColorDialog(context, component as Led);
                 },
               ),
+            if (component is SegmentDisplay) ...[
+              ListTile(
+                leading: const Icon(Icons.palette),
+                title: const Text('Set Color'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showSegmentColorDialog(context, component as SegmentDisplay);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.format_size),
+                title: const Text('Set Font Size'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showSegmentSizeDialog(context, component as SegmentDisplay);
+                },
+              ),
+            ],
           ],
         );
       },
@@ -283,6 +347,67 @@ class ComponentWidget extends StatelessWidget {
               if (h != null && l != null) {
                 led.colorHigh = h;
                 led.colorLow = l;
+                Provider.of<CircuitProvider>(context, listen: false).refresh();
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSegmentColorDialog(BuildContext context, SegmentDisplay display) {
+    TextEditingController colorCtrl = TextEditingController(
+      text: "0x${display.color.toRadixString(16).toUpperCase()}",
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Segment Color (0xAARRGGBB)"),
+        content: TextField(
+          controller: colorCtrl,
+          decoration: const InputDecoration(labelText: "Color (Hex)"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              int? c = int.tryParse(colorCtrl.text);
+              if (c != null) {
+                display.color = c;
+                Provider.of<CircuitProvider>(context, listen: false).refresh();
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSegmentSizeDialog(BuildContext context, SegmentDisplay display) {
+    TextEditingController sizeCtrl = TextEditingController(
+      text: display.fontSize.toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Font Size"),
+        content: TextField(
+          controller: sizeCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: "Size (pixels)"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              double? s = double.tryParse(sizeCtrl.text);
+              if (s != null) {
+                display.fontSize = s;
                 Provider.of<CircuitProvider>(context, listen: false).refresh();
               }
               Navigator.pop(ctx);
