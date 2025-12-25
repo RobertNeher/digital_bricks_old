@@ -4,6 +4,7 @@ import '../circuit_provider.dart';
 import '../models/logic_component.dart'; // Needed for type
 import '../models/connection.dart';
 import '../models/io_devices.dart'; // For SegmentDisplay check
+import '../models/saved_circuit.dart';
 import 'component_widget.dart';
 import 'wire_painter.dart';
 import 'grid_painter.dart';
@@ -45,7 +46,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
               onTap: () {
                 provider.clearSelection();
               },
-              child: DragTarget<ComponentType>(
+              child: DragTarget<Object>(
                 onAcceptWithDetails: (details) {
                   _handleDrop(context, details.data, details.offset);
                 },
@@ -127,6 +128,12 @@ class _CircuitBoardState extends State<CircuitBoard> {
                       icon: const Icon(Icons.align_vertical_top),
                       tooltip: "Align Top",
                       onPressed: () => provider.alignSelectedComponents('top'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.save),
+                      tooltip: "Save as Blueprint",
+                      onPressed: () =>
+                          _showSaveBlueprintDialog(context, provider),
                     ),
                     const SizedBox(width: 8),
                     Container(width: 1, height: 24, color: Colors.grey),
@@ -275,7 +282,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
     return Offset(x, y);
   }
 
-  void _handleDrop(BuildContext context, ComponentType type, Offset dropPos) {
+  void _handleDrop(BuildContext context, dynamic data, Offset dropPos) {
     // dropPos is in global screen coordinates.
     // We need to convert it to the local coordinate system of the Container (Canvas).
 
@@ -289,10 +296,49 @@ class _CircuitBoardState extends State<CircuitBoard> {
       double snapX = (localPos.dx / gs).round() * gs;
       double snapY = (localPos.dy / gs).round() * gs;
 
-      Provider.of<CircuitProvider>(
-        context,
-        listen: false,
-      ).addComponentByType(type, Offset(snapX, snapY));
+      if (data is ComponentType) {
+        Provider.of<CircuitProvider>(
+          context,
+          listen: false,
+        ).addComponentByType(data, Offset(snapX, snapY));
+      } else if (data is SavedCircuit) {
+        Provider.of<CircuitProvider>(
+          context,
+          listen: false,
+        ).instantiateCustomCircuit(data, Offset(snapX, snapY));
+      }
     }
+  }
+
+  void _showSaveBlueprintDialog(
+    BuildContext context,
+    CircuitProvider provider,
+  ) {
+    TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Save Custom Blueprint"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Blueprint Name"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.saveSelectionAsCustom(controller.text);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
   }
 }

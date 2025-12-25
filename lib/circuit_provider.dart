@@ -11,6 +11,7 @@ import 'models/io_devices.dart';
 import 'models/memory.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
+import 'models/saved_circuit.dart';
 import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
@@ -457,6 +458,138 @@ class CircuitProvider extends ChangeNotifier {
     }
 
     addComponent(comp!);
+  }
+
+  // --- Custom Components (Blueprints) ---
+  List<SavedCircuit> customCircuits = [];
+
+  Future<void> loadBlueprints() async {
+    try {
+      String? appDir = await FileOps.getAssetsDirectory();
+      if (appDir == null) return;
+
+      // Simple local storage read if implementing properly
+      // For now, let's keep it in memory or try to read a specific file
+      // NOTE: FileOps doesn't have listDir, so we might need a fixed file name
+      // Let's assume 'blueprints.json' in app dir.
+    } catch (e) {
+      debugPrint("Error loading blueprints: $e");
+    }
+  }
+
+  void saveSelectionAsCustom(String name) {
+    if (selectedComponentIds.isEmpty) return;
+
+    // 1. Identify components
+    List<LogicComponent> selectedComps = components
+        .where((c) => selectedComponentIds.contains(c.id))
+        .toList();
+
+    if (selectedComps.isEmpty) return;
+
+    // 2. Identify internal connections (both ends selected)
+    List<Connection> internalConnections = connections.where((conn) {
+      bool sourceIn = selectedComponentIds.any(
+        (id) => conn.sourcePinId.startsWith(id),
+      );
+      bool targetIn = selectedComponentIds.any(
+        (id) => conn.targetPinId.startsWith(id),
+      );
+      return sourceIn && targetIn;
+    }).toList();
+
+    // 3. Normalize position
+    // Find top-left
+    double minX = double.infinity;
+    double minY = double.infinity;
+    for (var c in selectedComps) {
+      if (c.position.dx < minX) minX = c.position.dx;
+      if (c.position.dy < minY) minY = c.position.dy;
+    }
+
+    // Serialize with normalized position
+    List<Map<String, dynamic>> compJson = selectedComps.map((c) {
+      var json = c.toJson();
+      json['position_dx'] = c.position.dx - minX;
+      json['position_dy'] = c.position.dy - minY;
+      return json;
+    }).toList();
+
+    List<Map<String, dynamic>> connJson = internalConnections
+        .map((c) => c.toJson())
+        .toList();
+
+    SavedCircuit blueprint = SavedCircuit(
+      name: name,
+      components: compJson,
+      connections: connJson,
+    );
+
+    customCircuits.add(blueprint);
+    notifyListeners();
+  }
+
+  void instantiateCustomCircuit(SavedCircuit blueprint, Offset dropPos) {
+    // We need to map Old IDs -> New IDs to reconstruct connections accurately
+    Map<String, String> idMap = {}; // oldId -> newId
+
+    // 1. Create Components
+    for (var compData in blueprint.components) {
+      String oldId = compData['id'];
+      String newId = const Uuid().v4();
+      idMap[oldId] = newId;
+
+      // Create new component copy
+      // We deserialized logic is in _deserializeComponent but that expects exact IDs?
+      // Actually _deserializeComponent takes the JSON. We can modify the JSON 'id' and 'position' before passing it.
+
+      Map<String, dynamic> newJson = Map.from(compData);
+      newJson['id'] = newId;
+      newJson['position_dx'] = (compData['position_dx'] as double) + dropPos.dx;
+      newJson['position_dy'] = (compData['position_dy'] as double) + dropPos.dy;
+
+      LogicComponent newComp = _deserializeComponent(newJson);
+      components.add(newComp);
+    }
+
+    // 2. Create Connections
+    for (var connData in blueprint.connections) {
+      String oldSourcePin = connData['sourcePinId'];
+      String oldTargetPin = connData['targetPinId'];
+
+      // Resolve new pin IDs
+      // Pin ID format: "compId-pinIndex" ??
+      // Actually PinWidget uses pin.id.
+      // If pin IDs are constructed as "$compId-$index", we can reconstruct them.
+      // But let's check how Pin IDs are generated. LogicComponent generates them in constructor or addInputPin?
+      // LogicComponent:
+      //  addInputPin() -> inputs.add(Pin(..., id: "$id-in-$index"))
+      // So yes, they are deterministic based on ComponentID.
+
+      // Parse old IDs to find pin index or suffix
+      String newSourcePin = _remapPinId(oldSourcePin, idMap);
+      String newTargetPin = _remapPinId(oldTargetPin, idMap);
+
+      if (newSourcePin.isNotEmpty && newTargetPin.isNotEmpty) {
+        addConnection(newSourcePin, newTargetPin);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  String _remapPinId(String oldPinId, Map<String, String> idMap) {
+    // Attempt to find the component ID prefix
+    // oldPinId could be "d23a...-in-0"
+    // We iterate idMap to find which oldCompId is a prefix of oldPinId
+    for (var entry in idMap.entries) {
+      String oldCompId = entry.key;
+      if (oldPinId.startsWith(oldCompId)) {
+        String suffix = oldPinId.substring(oldCompId.length);
+        return "${entry.value}$suffix";
+      }
+    }
+    return "";
   }
 
   void refresh() {
