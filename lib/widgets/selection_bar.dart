@@ -63,6 +63,8 @@ class SelectionBar extends StatelessWidget {
                         style: const TextStyle(fontSize: 11),
                       ),
                       leading: const Icon(Icons.snippet_folder, size: 16),
+                      onLongPress: () =>
+                          _showBlueprintMenu(context, provider, blueprint),
                     ),
                   );
                 }).toList(),
@@ -71,6 +73,73 @@ class SelectionBar extends StatelessWidget {
           ),
           // Spacer for bottom
           const SizedBox(height: 50),
+        ],
+      ),
+    );
+  }
+
+  void _showBlueprintMenu(
+    BuildContext context,
+    CircuitProvider provider,
+    SavedCircuit blueprint,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Rename'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showRenameDialog(context, provider, blueprint);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete'),
+              onTap: () {
+                provider.deleteCustomCircuit(blueprint);
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRenameDialog(
+    BuildContext context,
+    CircuitProvider provider,
+    SavedCircuit blueprint,
+  ) {
+    TextEditingController controller = TextEditingController(
+      text: blueprint.name,
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Rename Blueprint"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "New Name"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.renameCustomCircuit(blueprint, controller.text);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text("Save"),
+          ),
         ],
       ),
     );

@@ -578,6 +578,24 @@ class CircuitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void renameCustomCircuit(SavedCircuit oldCircuit, String newName) {
+    int index = customCircuits.indexOf(oldCircuit);
+    if (index != -1) {
+      SavedCircuit newCircuit = SavedCircuit(
+        name: newName,
+        components: oldCircuit.components,
+        connections: oldCircuit.connections,
+      );
+      customCircuits[index] = newCircuit;
+      notifyListeners();
+    }
+  }
+
+  void deleteCustomCircuit(SavedCircuit circuit) {
+    customCircuits.remove(circuit);
+    notifyListeners();
+  }
+
   String _remapPinId(String oldPinId, Map<String, String> idMap) {
     // Attempt to find the component ID prefix
     // oldPinId could be "d23a...-in-0"
