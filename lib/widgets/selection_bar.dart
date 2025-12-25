@@ -100,13 +100,41 @@ class SelectionBar extends StatelessWidget {
               leading: const Icon(Icons.delete),
               title: const Text('Delete'),
               onTap: () {
-                provider.deleteCustomCircuit(blueprint);
                 Navigator.pop(ctx);
+                _showDeleteConfirmDialog(context, provider, blueprint);
               },
             ),
           ],
         );
       },
+    );
+  }
+
+  void _showDeleteConfirmDialog(
+    BuildContext context,
+    CircuitProvider provider,
+    SavedCircuit blueprint,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Blueprint?"),
+        content: Text("Are you sure you want to delete '${blueprint.name}'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.deleteCustomCircuit(blueprint);
+              Navigator.pop(ctx);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
     );
   }
 
