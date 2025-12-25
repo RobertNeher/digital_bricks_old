@@ -6,6 +6,8 @@ import '../models/io_devices.dart';
 import '../circuit_provider.dart';
 import 'gate_painter.dart';
 import 'pin_widget.dart';
+import 'segment_display_painter.dart';
+import '../utils/segment_patterns.dart';
 
 class ComponentWidget extends StatelessWidget {
   final LogicComponent component;
@@ -22,9 +24,12 @@ class ComponentWidget extends StatelessWidget {
     }
     double width = 60.0;
     if (component is SegmentDisplay) {
-      // Needs to be bigger
-      width = 80.0;
-      height = 100.0;
+      // Use parameterized size but ensure pins fit
+      // Default aspect ratio for 16-seg is roughly 0.8 width/height
+      double fontH = (component as SegmentDisplay).fontSize;
+      double pinH = component.inputs.length * 20.0;
+      height = fontH > pinH ? fontH : pinH;
+      width = fontH * 0.8;
     }
 
     return GestureDetector(
@@ -157,30 +162,36 @@ class ComponentWidget extends StatelessWidget {
 
   Widget _buildSegmentDisplayContent(SegmentDisplay display) {
     int val = display.inputValue;
-    String text = "";
+
     if (display.segments == 16) {
-      // 7-bit ASCII mode
-      if (val >= 32 && val <= 126) {
-        text = String.fromCharCode(val);
-      } else {
-        // Fallback to Hex for non-printable controls sc
-        // so user sees *something* happens
-        text = "0x${val.toRadixString(16).toUpperCase()}";
-      }
+      // Real 16-segment rendering
+      int mask = SegmentPatterns.getMask(val);
+
+      double h = display.fontSize;
+      double w = h * 0.8;
+
+      return SizedBox(
+        width: w,
+        height: h,
+        child: CustomPaint(
+          painter: SegmentDisplayPainter(
+            mask: mask,
+            color: Color(display.color),
+          ),
+        ),
+      );
     } else {
       // 7-segment (Hex mode)
-      text = val.toRadixString(16).toUpperCase();
+      String text = val.toRadixString(16).toUpperCase();
+      return Text(
+        text,
+        style: TextStyle(
+          fontSize: display.fontSize,
+          fontWeight: FontWeight.bold,
+          color: Color(display.color),
+        ),
+      );
     }
-
-    // Use configurable fontSize instead of FittedBox, as requested
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: display.fontSize,
-        fontWeight: FontWeight.bold,
-        color: Color(display.color),
-      ),
-    );
   }
 
   void _showContextMenu(BuildContext context) {

@@ -116,9 +116,20 @@ class CircuitProvider extends ChangeNotifier {
 
   void removeComponent(String id) {
     components.removeWhere((c) => c.id == id);
-    connections.removeWhere(
-      (c) => c.sourcePinId.startsWith(id) || c.targetPinId.startsWith(id),
-    );
+
+    // Find connections attached to this component
+    List<String> connectionsToRemove = [];
+    for (var conn in connections) {
+      if (conn.sourcePinId.startsWith(id) || conn.targetPinId.startsWith(id)) {
+        connectionsToRemove.add(conn.id);
+      }
+    }
+
+    // Remove them one by one to trigger pin reset logic
+    for (var connId in connectionsToRemove) {
+      removeConnection(connId);
+    }
+
     notifyListeners();
   }
 
@@ -136,8 +147,17 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void removeConnection(String connectionId) {
-    connections.removeWhere((c) => c.id == connectionId);
-    notifyListeners();
+    int index = connections.indexWhere((c) => c.id == connectionId);
+    if (index != -1) {
+      // Logic to reset the target pin to false (floating input = low)
+      var conn = connections[index];
+      var targetPin = _findPin(conn.targetPinId);
+      if (targetPin != null) {
+        targetPin.value = false;
+      }
+      connections.removeAt(index);
+      notifyListeners();
+    }
   }
 
   // --- Selection ---
@@ -363,7 +383,7 @@ class CircuitProvider extends ChangeNotifier {
           position: pos,
           segments: 7,
           color: json['color'] ?? 0xFF4CAF50,
-          fontSize: json['fontSize'] ?? 24.0,
+          fontSize: json['fontSize'] ?? 80.0,
         );
         break;
       case ComponentType.segment16:

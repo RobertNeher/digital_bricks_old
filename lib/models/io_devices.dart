@@ -71,7 +71,7 @@ class SegmentDisplay extends LogicComponent {
     required super.position,
     this.segments = 7,
     this.color = 0xFF4CAF50, // Green
-    this.fontSize = 24.0,
+    this.fontSize = 80.0,
   }) : super(
          name: '${segments}-Seg',
          type: segments == 7 ? ComponentType.segment7 : ComponentType.segment16,

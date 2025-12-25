@@ -253,8 +253,11 @@ class _CircuitBoardState extends State<CircuitBoard> {
     }
     double width = 60.0;
     if (c is SegmentDisplay) {
-      width = 80.0;
-      height = 100.0;
+      // Logic matching ComponentWidget
+      double fontH = c.fontSize;
+      double pinH = c.inputs.length * 20.0;
+      height = fontH > pinH ? fontH : pinH;
+      width = fontH * 0.8;
     }
     double totalWidth = width + 20;
 
