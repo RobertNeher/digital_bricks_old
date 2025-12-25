@@ -6,7 +6,9 @@ import '../models/io_devices.dart';
 import '../models/integrated_circuit.dart';
 import '../circuit_provider.dart';
 import 'gate_painter.dart';
+import 'gate_painter.dart';
 import 'ic_painter.dart';
+import 'color_picker_dialog.dart';
 import 'pin_widget.dart';
 import 'segment_display_painter.dart';
 import '../utils/segment_patterns.dart';
@@ -407,79 +409,80 @@ class ComponentWidget extends StatelessWidget {
   }
 
   void _showColorDialog(BuildContext context, Led led) {
-    // Hex string input for simplicity.
-    // Format: 0xAARRGGBB
-    TextEditingController highCtrl = TextEditingController(
-      text: "0x${led.colorHigh.toRadixString(16).toUpperCase()}",
-    );
-    TextEditingController lowCtrl = TextEditingController(
-      text: "0x${led.colorLow.toRadixString(16).toUpperCase()}",
-    );
-
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("LED Colors (0xAARRGGBB)"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: highCtrl,
-              decoration: const InputDecoration(labelText: "High Color (Hex)"),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("LED Colors"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text("High Output Color"),
+                  trailing: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Color(led.colorHigh),
+                      border: Border.all(color: Colors.grey),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  onTap: () {
+                    showColorPicker(context, Color(led.colorHigh), (c) {
+                      setState(() {
+                        led.colorHigh = c.value;
+                      });
+                      Provider.of<CircuitProvider>(
+                        context,
+                        listen: false,
+                      ).refresh();
+                    });
+                  },
+                ),
+                ListTile(
+                  title: const Text("Low Output Color"),
+                  trailing: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Color(led.colorLow),
+                      border: Border.all(color: Colors.grey),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  onTap: () {
+                    showColorPicker(context, Color(led.colorLow), (c) {
+                      setState(() {
+                        led.colorLow = c.value;
+                      });
+                      Provider.of<CircuitProvider>(
+                        context,
+                        listen: false,
+                      ).refresh();
+                    });
+                  },
+                ),
+              ],
             ),
-            TextField(
-              controller: lowCtrl,
-              decoration: const InputDecoration(labelText: "Low Color (Hex)"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              int? h = int.tryParse(highCtrl.text);
-              int? l = int.tryParse(lowCtrl.text);
-              if (h != null && l != null) {
-                led.colorHigh = h;
-                led.colorLow = l;
-                Provider.of<CircuitProvider>(context, listen: false).refresh();
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text("OK"),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Done"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   void _showSegmentColorDialog(BuildContext context, SegmentDisplay display) {
-    TextEditingController colorCtrl = TextEditingController(
-      text: "0x${display.color.toRadixString(16).toUpperCase()}",
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Segment Color (0xAARRGGBB)"),
-        content: TextField(
-          controller: colorCtrl,
-          decoration: const InputDecoration(labelText: "Color (Hex)"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              int? c = int.tryParse(colorCtrl.text);
-              if (c != null) {
-                display.color = c;
-                Provider.of<CircuitProvider>(context, listen: false).refresh();
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
+    showColorPicker(context, Color(display.color), (c) {
+      display.color = c.value;
+      Provider.of<CircuitProvider>(context, listen: false).refresh();
+    });
   }
 
   void _showSegmentSizeDialog(BuildContext context, SegmentDisplay display) {
