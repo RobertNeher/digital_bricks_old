@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'logic_component.dart';
 import 'saved_circuit.dart';
 import 'connection.dart';
@@ -6,7 +6,7 @@ import 'pin.dart';
 import 'gates.dart';
 import 'io_devices.dart';
 import 'memory.dart';
-import 'package:uuid/uuid.dart';
+// import 'package:uuid/uuid.dart';
 
 class IntegratedCircuit extends LogicComponent {
   final SavedCircuit blueprint;

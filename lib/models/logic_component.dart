@@ -16,6 +16,8 @@ enum ComponentType {
   segment16,
   constantSource,
   dFlipFlop,
+  circuitInput,
+  circuitOutput,
   custom, // Integrated Circuit
 }
 

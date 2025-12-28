@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../models/logic_component.dart';
 import '../models/gates.dart';
 import '../models/io_devices.dart';
+import '../models/circuit_io.dart';
 import '../models/integrated_circuit.dart';
 import '../circuit_provider.dart';
-import 'gate_painter.dart';
 import 'gate_painter.dart';
 import 'ic_painter.dart';
 import 'color_picker_dialog.dart';
@@ -37,6 +37,26 @@ class ComponentWidget extends StatelessWidget {
       double pinH = component.inputs.length * 20.0;
       height = fontH > pinH ? fontH : pinH;
       width = fontH * 0.8;
+    }
+
+    if (component is IntegratedCircuit) {
+      var ic = component as IntegratedCircuit;
+      double maxInW = 0;
+      double maxOutW = 0;
+      const double charWidth = 8.0;
+
+      for (var l in ic.blueprint.inputLabels) {
+        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
+      }
+      for (var l in ic.blueprint.outputLabels) {
+        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
+      }
+
+      // Standard body width = 60.
+      // Container width will be set to 'width + 20' later.
+      // We want 'width + 20' to equal 'maxInW + 60 + maxOutW + 20 (for pins)'.
+      // So 'width' should be 'maxInW + 60 + maxOutW'.
+      width = 60.0 + maxInW + maxOutW;
     }
 
     return GestureDetector(
@@ -91,7 +111,30 @@ class ComponentWidget extends StatelessWidget {
             // Inputs
             Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: component.inputs.map((p) => PinWidget(pin: p)).toList(),
+              children: component.inputs.asMap().entries.map((entry) {
+                int idx = entry.key;
+                var p = entry.value;
+                Widget pinWidget = PinWidget(pin: p);
+
+                if (component is IntegratedCircuit) {
+                  var ic = component as IntegratedCircuit;
+                  String label = "";
+                  if (idx < ic.blueprint.inputLabels.length) {
+                    label = ic.blueprint.inputLabels[idx];
+                  }
+                  if (label.isNotEmpty) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        pinWidget,
+                        const SizedBox(width: 4),
+                        Text(label, style: const TextStyle(fontSize: 10)),
+                      ],
+                    );
+                  }
+                }
+                return pinWidget;
+              }).toList(),
             ),
             // Body
             Expanded(
@@ -133,7 +176,11 @@ class ComponentWidget extends StatelessWidget {
                         // For label
                         Center(
                           child: Text(
-                            component.name,
+                            (component is CircuitInput)
+                                ? (component as CircuitInput).label
+                                : (component is CircuitOutput)
+                                ? (component as CircuitOutput).label
+                                : component.name,
                             style: const TextStyle(fontSize: 10),
                           ),
                         ),
@@ -205,9 +252,30 @@ class ComponentWidget extends StatelessWidget {
             // Outputs
             Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: component.outputs
-                  .map((p) => PinWidget(pin: p))
-                  .toList(),
+              children: component.outputs.asMap().entries.map((entry) {
+                int idx = entry.key;
+                var p = entry.value;
+                Widget pinWidget = PinWidget(pin: p);
+
+                if (component is IntegratedCircuit) {
+                  var ic = component as IntegratedCircuit;
+                  String label = "";
+                  if (idx < ic.blueprint.outputLabels.length) {
+                    label = ic.blueprint.outputLabels[idx];
+                  }
+                  if (label.isNotEmpty) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(label, style: const TextStyle(fontSize: 10)),
+                        const SizedBox(width: 4),
+                        pinWidget,
+                      ],
+                    );
+                  }
+                }
+                return pinWidget;
+              }).toList(),
             ),
           ],
         ),
@@ -373,6 +441,15 @@ class ComponentWidget extends StatelessWidget {
                   Navigator.pop(ctx);
                 },
               ),
+            if (component is CircuitInput || component is CircuitOutput)
+              ListTile(
+                leading: const Icon(Icons.label),
+                title: const Text('Edit Label'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showLabelDialog(context, component);
+                },
+              ),
           ],
         );
       },
@@ -510,6 +587,39 @@ class ComponentWidget extends StatelessWidget {
               Navigator.pop(ctx);
             },
             child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLabelDialog(BuildContext context, LogicComponent comp) {
+    String currentLabel = "";
+    if (comp is CircuitInput) currentLabel = comp.label;
+    if (comp is CircuitOutput) currentLabel = comp.label;
+
+    TextEditingController controller = TextEditingController(
+      text: currentLabel,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Edit Label"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Label"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              String newLabel = controller.text;
+              if (comp is CircuitInput) comp.label = newLabel;
+              if (comp is CircuitOutput) comp.label = newLabel;
+              Provider.of<CircuitProvider>(context, listen: false).refresh();
+              Navigator.pop(ctx);
+            },
+            child: const Text("Save"),
           ),
         ],
       ),

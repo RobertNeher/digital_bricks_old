@@ -6,6 +6,8 @@ class SavedCircuit {
   inputPorts; // IDs of internal pins that are exposed as inputs
   final List<String>
   outputPorts; // IDs of internal pins that are exposed as outputs
+  final List<String> inputLabels;
+  final List<String> outputLabels;
 
   SavedCircuit({
     required this.name,
@@ -13,6 +15,8 @@ class SavedCircuit {
     required this.connections,
     required this.inputPorts,
     required this.outputPorts,
+    this.inputLabels = const [],
+    this.outputLabels = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -22,6 +26,8 @@ class SavedCircuit {
       'connections': connections,
       'inputPorts': inputPorts,
       'outputPorts': outputPorts,
+      'inputLabels': inputLabels,
+      'outputLabels': outputLabels,
     };
   }
 
@@ -32,6 +38,8 @@ class SavedCircuit {
       connections: List<Map<String, dynamic>>.from(json['connections']),
       inputPorts: List<String>.from(json['inputPorts'] ?? []),
       outputPorts: List<String>.from(json['outputPorts'] ?? []),
+      inputLabels: List<String>.from(json['inputLabels'] ?? []),
+      outputLabels: List<String>.from(json['outputLabels'] ?? []),
     );
   }
 }

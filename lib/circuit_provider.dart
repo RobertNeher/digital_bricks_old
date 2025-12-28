@@ -13,6 +13,7 @@ import 'models/connection.dart';
 import 'models/pin.dart';
 import 'models/saved_circuit.dart';
 import 'models/integrated_circuit.dart';
+import 'models/circuit_io.dart';
 import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
@@ -27,6 +28,7 @@ class CircuitProvider extends ChangeNotifier {
 
   CircuitProvider() {
     _startSimulation();
+    loadBlueprints();
   }
 
   void _startSimulation() {
@@ -411,6 +413,12 @@ class CircuitProvider extends ChangeNotifier {
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
         comp = IntegratedCircuit(id: id, position: pos, blueprint: bp);
         break;
+      case ComponentType.circuitInput:
+        comp = CircuitInput(id: id, position: pos);
+        break;
+      case ComponentType.circuitOutput:
+        comp = CircuitOutput(id: id, position: pos);
+        break;
     }
 
     return comp;
@@ -463,6 +471,12 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.custom:
         // Cannot add undefined custom component directly by type
         return;
+      case ComponentType.circuitInput:
+        comp = CircuitInput(id: id, position: pos);
+        break;
+      case ComponentType.circuitOutput:
+        comp = CircuitOutput(id: id, position: pos);
+        break;
     }
 
     addComponent(comp!);
@@ -476,12 +490,44 @@ class CircuitProvider extends ChangeNotifier {
       String? appDir = await FileOps.getAssetsDirectory();
       if (appDir == null) return;
 
-      // Simple local storage read if implementing properly
-      // For now, let's keep it in memory or try to read a specific file
-      // NOTE: FileOps doesn't have listDir, so we might need a fixed file name
-      // Let's assume 'blueprints.json' in app dir.
+      String path = '$appDir${FileOps.pathSeparator}blueprints.json';
+      String content = "";
+
+      print("Loading blueprints from $path");
+      try {
+        content = await FileOps.readFileFromPath(path);
+      } catch (e) {
+        print("No blueprints file found or read error: $e");
+        return;
+      }
+
+      if (content.isEmpty) return;
+
+      List<dynamic> jsonList = jsonDecode(content);
+      customCircuits.clear();
+      for (var bp in jsonList) {
+        customCircuits.add(SavedCircuit.fromJson(bp));
+      }
+      print("Loaded ${customCircuits.length} blueprints");
+      notifyListeners();
     } catch (e) {
-      debugPrint("Error loading blueprints: $e");
+      print("Error loading blueprints: $e");
+    }
+  }
+
+  Future<void> _saveBlueprints() async {
+    try {
+      String? appDir = await FileOps.getAssetsDirectory();
+      if (appDir == null) return;
+
+      String path = '$appDir${FileOps.pathSeparator}blueprints.json';
+      String content = jsonEncode(
+        customCircuits.map((e) => e.toJson()).toList(),
+      );
+
+      await FileOps.saveFileToPath(path, content);
+    } catch (e) {
+      debugPrint("Error saving blueprints: $e");
     }
   }
 
@@ -509,26 +555,64 @@ class CircuitProvider extends ChangeNotifier {
     // 3. Identify Ports (Unconnected internal pins)
     // Input Ports: Input pins compliant with selection but NOT a target of any internal connection
     List<String> inputPorts = [];
-    for (var c in selectedComps) {
-      for (var p in c.inputs) {
-        bool isTarget = internalConnections.any(
-          (conn) => conn.targetPinId == p.id,
-        );
-        if (!isTarget) {
-          inputPorts.add(p.id);
+    List<String> outputPorts = [];
+    List<String> inputLabels = [];
+    List<String> outputLabels = [];
+
+    // ... (Selection Logic)
+
+    // 4. Normalize position
+    // ...
+
+    // NEW LOGIC: Check if we have explicit CircuitInput / CircuitOutput components
+    // If we do, we use them EXCLUSIVELY for the interface.
+    // If not, we fall back to the old logic (implicit ports).
+
+    List<CircuitInput> explicitInputs = selectedComps
+        .whereType<CircuitInput>()
+        .toList();
+    List<CircuitOutput> explicitOutputs = selectedComps
+        .whereType<CircuitOutput>()
+        .toList();
+
+    bool useExplicit = explicitInputs.isNotEmpty || explicitOutputs.isNotEmpty;
+
+    if (useExplicit) {
+      // Clear implicit ports
+      inputPorts.clear();
+      outputPorts.clear();
+
+      // Sort inputs: Top-to-Bottom, then Left-to-Right
+      explicitInputs.sort((a, b) {
+        if ((a.position.dy - b.position.dy).abs() > 10) {
+          return a.position.dy.compareTo(b.position.dy);
+        }
+        return a.position.dx.compareTo(b.position.dx);
+      });
+
+      // Sort outputs: Top-to-Bottom, then Left-to-Right
+      explicitOutputs.sort((a, b) {
+        if ((a.position.dy - b.position.dy).abs() > 10) {
+          return a.position.dy.compareTo(b.position.dy);
+        }
+        return a.position.dx.compareTo(b.position.dx);
+      });
+
+      for (var inp in explicitInputs) {
+        // The input port for the OUTSIDE world connects to the pin that drives the INTERNAL circuit.
+        // CircuitInput has 1 output pin.
+        // Wait. CircuitInput acts as a source in the internal circuit.
+        // It's the "socket" where the outside wire plugs in.
+        // So the "Port ID" should be the ID of the pin that is available inside.
+        if (inp.outputs.isNotEmpty) {
+          inputPorts.add(inp.outputs[0].id);
         }
       }
-    }
 
-    // Output Ports: Output pins compliant with selection but NOT a source of any internal connection
-    List<String> outputPorts = [];
-    for (var c in selectedComps) {
-      for (var p in c.outputs) {
-        bool isSource = internalConnections.any(
-          (conn) => conn.sourcePinId == p.id,
-        );
-        if (!isSource) {
-          outputPorts.add(p.id);
+      for (var out in explicitOutputs) {
+        // CircuitOutput acts as a sink in the internal circuit.
+        if (out.inputs.isNotEmpty) {
+          outputPorts.add(out.inputs[0].id);
         }
       }
     }
@@ -560,9 +644,12 @@ class CircuitProvider extends ChangeNotifier {
       connections: connJson,
       inputPorts: inputPorts,
       outputPorts: outputPorts,
+      inputLabels: inputLabels,
+      outputLabels: outputLabels,
     );
 
     customCircuits.add(blueprint);
+    _saveBlueprints();
     notifyListeners();
   }
 
@@ -585,14 +672,18 @@ class CircuitProvider extends ChangeNotifier {
         connections: oldCircuit.connections,
         inputPorts: oldCircuit.inputPorts,
         outputPorts: oldCircuit.outputPorts,
+        inputLabels: oldCircuit.inputLabels,
+        outputLabels: oldCircuit.outputLabels,
       );
       customCircuits[index] = newCircuit;
+      _saveBlueprints();
       notifyListeners();
     }
   }
 
   void deleteCustomCircuit(SavedCircuit circuit) {
     customCircuits.remove(circuit);
+    _saveBlueprints();
     notifyListeners();
   }
 

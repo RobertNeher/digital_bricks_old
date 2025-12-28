@@ -58,6 +58,12 @@ class GatePainter extends CustomPainter {
         _drawBox(path, size);
         _drawDFFSymbols(canvas, size); // Custom drawing for labels/clock
         break;
+      case ComponentType.circuitInput:
+        _drawTerminal(canvas, size, "IN", Colors.green[200]!);
+        break;
+      case ComponentType.circuitOutput:
+        _drawTerminal(canvas, size, "OUT", Colors.red[200]!);
+        break;
       case ComponentType.custom:
         // Handled by ComponentWidget specifically with a Container
         // We leave path empty or maybe draw a box border here?
@@ -68,6 +74,42 @@ class GatePainter extends CustomPainter {
     }
 
     canvas.drawPath(path, paint);
+  }
+
+  void _drawTerminal(Canvas canvas, Size size, String label, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final border = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawRect(rect, paint);
+    canvas.drawRect(rect, border);
+
+    final textSpan = TextSpan(
+      text: label,
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size.width - textPainter.width) / 2,
+        (size.height - textPainter.height) / 2,
+      ),
+    );
   }
 
   void _drawDFFSymbols(Canvas canvas, Size size) {
