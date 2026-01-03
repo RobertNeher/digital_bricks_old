@@ -29,67 +29,72 @@ class _CircuitBoardState extends State<CircuitBoard> {
     const double canvasWidth = 2000;
     const double canvasHeight = 2000;
 
+    // Main Content
     return Stack(
       children: [
-        ColoredBox(
-          color: Colors.white,
-          child: InteractiveViewer(
-            transformationController: _transformController,
-            boundaryMargin: const EdgeInsets.all(double.infinity),
-            minScale: 0.1,
-            maxScale: 4.0,
-            constrained: false,
-            child: GestureDetector(
-              onSecondaryTapUp: (details) {
-                _handleSecondaryTap(context, details.localPosition, provider);
+        // Infinite Grid Layer (Background)
+        Positioned.fill(
+          child: CustomPaint(
+            painter: GridPainter(
+              gridSize: CircuitProvider.gridSize,
+              listenable: _transformController,
+              // Match the previous grey[200] background or similar
+              backgroundColor: Colors.grey[200]!,
+            ),
+          ),
+        ),
+
+        // Interactive Workspace
+        InteractiveViewer(
+          transformationController: _transformController,
+          boundaryMargin: const EdgeInsets.all(double.infinity),
+          minScale: 0.1,
+          maxScale: 4.0,
+          constrained: false,
+          child: GestureDetector(
+            onSecondaryTapUp: (details) {
+              _handleSecondaryTap(context, details.localPosition, provider);
+            },
+            onTap: () {
+              provider.clearSelection();
+            },
+            child: DragTarget<Object>(
+              onAcceptWithDetails: (details) {
+                _handleDrop(context, details.data, details.offset);
               },
-              onTap: () {
-                provider.clearSelection();
-              },
-              child: DragTarget<Object>(
-                onAcceptWithDetails: (details) {
-                  _handleDrop(context, details.data, details.offset);
-                },
-                builder: (context, candidateData, rejectedData) {
-                  return Container(
-                    key: _canvasKey,
-                    width: canvasWidth,
-                    height: canvasHeight,
-                    color: Colors.grey[200], // Fixed color
-                    child: Stack(
-                      children: [
-                        // Grid (Bottom-most layer)
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: GridPainter(
-                              gridSize: CircuitProvider.gridSize,
-                            ),
+              builder: (context, candidateData, rejectedData) {
+                return Container(
+                  key: _canvasKey,
+                  width: canvasWidth,
+                  height: canvasHeight,
+                  color:
+                      Colors.transparent, // Transparent so grid shows through
+                  child: Stack(
+                    children: [
+                      // Grid removed from here
+
+                      // Wires (Bottom layer)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: WirePainter(
+                            connections: provider.connections,
+                            components: provider.components,
                           ),
                         ),
+                      ),
 
-                        // Wires (Bottom layer)
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: WirePainter(
-                              connections: provider.connections,
-                              components: provider.components,
-                            ),
-                          ),
-                        ),
-
-                        // Components
-                        ...provider.components.map((comp) {
-                          return Positioned(
-                            left: comp.position.dx,
-                            top: comp.position.dy,
-                            child: ComponentWidget(component: comp),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      // Components
+                      ...provider.components.map((comp) {
+                        return Positioned(
+                          left: comp.position.dx,
+                          top: comp.position.dy,
+                          child: ComponentWidget(component: comp),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
