@@ -29,50 +29,47 @@ class _CircuitBoardState extends State<CircuitBoard> {
     const double canvasWidth = 2000;
     const double canvasHeight = 2000;
 
-    // Main Content
-    return Stack(
-      children: [
-        // Infinite Grid Layer (Background)
-        Positioned.fill(
-          child: CustomPaint(
-            painter: GridPainter(
-              gridSize: CircuitProvider.gridSize,
-              listenable: _transformController,
-              // Match the previous grey[200] background or similar
-              backgroundColor: Colors.grey[200]!,
+    return DragTarget<Object>(
+      onAcceptWithDetails: (details) {
+        _handleDrop(context, details.data, details.offset);
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Stack(
+          children: [
+            // Infinite Grid Layer (Background)
+            Positioned.fill(
+              child: CustomPaint(
+                painter: GridPainter(
+                  gridSize: CircuitProvider.gridSize,
+                  listenable: _transformController,
+                  backgroundColor: Colors.grey[200]!,
+                ),
+              ),
             ),
-          ),
-        ),
 
-        // Interactive Workspace
-        InteractiveViewer(
-          transformationController: _transformController,
-          boundaryMargin: const EdgeInsets.all(double.infinity),
-          minScale: 0.1,
-          maxScale: 4.0,
-          constrained: false,
-          child: GestureDetector(
-            onSecondaryTapUp: (details) {
-              _handleSecondaryTap(context, details.localPosition, provider);
-            },
-            onTap: () {
-              provider.clearSelection();
-            },
-            child: DragTarget<Object>(
-              onAcceptWithDetails: (details) {
-                _handleDrop(context, details.data, details.offset);
-              },
-              builder: (context, candidateData, rejectedData) {
-                return Container(
+            // Interactive Workspace
+            InteractiveViewer(
+              transformationController: _transformController,
+              boundaryMargin: const EdgeInsets.all(double.infinity),
+              minScale: 0.1,
+              maxScale: 4.0,
+              constrained: false,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onSecondaryTapUp: (details) {
+                  _handleSecondaryTap(context, details.localPosition, provider);
+                },
+                onTap: () {
+                  provider.clearSelection();
+                },
+                child: Container(
                   key: _canvasKey,
                   width: canvasWidth,
                   height: canvasHeight,
-                  color:
-                      Colors.transparent, // Transparent so grid shows through
+                  color: Colors.transparent,
                   child: Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      // Grid removed from here
-
                       // Wires (Bottom layer)
                       Positioned.fill(
                         child: CustomPaint(
@@ -93,72 +90,75 @@ class _CircuitBoardState extends State<CircuitBoard> {
                       }).toList(),
                     ],
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-        // Selection Toolbar (Overlay)
-        if (provider.selectedComponentIds.isNotEmpty)
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.align_horizontal_left),
-                      tooltip: "Align Left",
-                      onPressed: () => provider.alignSelectedComponents('left'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.align_vertical_top),
-                      tooltip: "Align Top",
-                      onPressed: () => provider.alignSelectedComponents('top'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.save),
-                      tooltip: "Save as Blueprint",
-                      onPressed: () =>
-                          _showSaveBlueprintDialog(context, provider),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(width: 1, height: 24, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      tooltip: "Delete Selected",
-                      onPressed: () => provider.deleteSelectedComponents(),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: "Clear Selection",
-                      onPressed: () => provider.clearSelection(),
-                    ),
-                  ],
                 ),
               ),
             ),
-          ),
-      ],
+
+            // Selection Toolbar (Overlay)
+            if (provider.selectedComponentIds.isNotEmpty)
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.align_horizontal_left),
+                          tooltip: "Align Left",
+                          onPressed: () =>
+                              provider.alignSelectedComponents('left'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.align_vertical_top),
+                          tooltip: "Align Top",
+                          onPressed: () =>
+                              provider.alignSelectedComponents('top'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.save),
+                          tooltip: "Save as Blueprint",
+                          onPressed: () =>
+                              _showSaveBlueprintDialog(context, provider),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(width: 1, height: 24, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: "Delete Selected",
+                          onPressed: () => provider.deleteSelectedComponents(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: "Clear Selection",
+                          onPressed: () => provider.clearSelection(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
