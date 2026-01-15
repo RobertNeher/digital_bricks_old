@@ -262,11 +262,22 @@ class CircuitProvider extends ChangeNotifier {
 
   Future<void> saveCircuitAs() async {
     // Web: FilePicker.saveFile is not useful for path selection. Just trigger download.
+    // Web: Use FileOps.saveFile which now supports FS Access API (Save As Picker)
     if (kIsWeb) {
-      debugPrint(
-        "saveCircuitAs: Web detected, skipping picker and downloading...",
+      debugPrint("saveCircuitAs: Web detected, invoking FileOps.saveFile...");
+      // We pass a default name, but saveFile will trigger the picker.
+      String? savedName = await FileOps.saveFile(
+        jsonEncode({
+          'components': components.map((c) => c.toJson()).toList(),
+          'connections': connections.map((c) => c.toJson()).toList(),
+        }),
+        "circuit.json",
       );
-      await saveCircuitToPath("circuit.json");
+
+      if (savedName != null) {
+        currentFilePath = savedName;
+        debugPrint("saveCircuitAs: Saved to $savedName");
+      }
       return;
     }
 
@@ -518,9 +529,15 @@ class CircuitProvider extends ChangeNotifier {
   Future<void> _saveBlueprints() async {
     try {
       String? appDir = await FileOps.getAssetsDirectory();
-      if (appDir == null) return;
 
-      String path = '$appDir${FileOps.pathSeparator}blueprints.json';
+      String path;
+      if (appDir == null) {
+        // Fallback for web/no-fs: use simple filename to trigger download in FileOps
+        path = 'blueprints.json';
+      } else {
+        path = '$appDir${FileOps.pathSeparator}blueprints.json';
+      }
+
       String content = jsonEncode(
         customCircuits.map((e) => e.toJson()).toList(),
       );
@@ -685,6 +702,41 @@ class CircuitProvider extends ChangeNotifier {
     customCircuits.remove(circuit);
     _saveBlueprints();
     notifyListeners();
+  }
+
+  Future<void> importBlueprints() async {
+    try {
+      final file = await FileOps.pickFile();
+      if (file == null) return;
+
+      String content = await FileOps.readFile(file);
+      if (content.isEmpty) return;
+
+      List<dynamic> jsonList = jsonDecode(content);
+      // Optional: Logic to merge or replace. For now, we append/overwrite by name?
+      // Simple strategy: Clear and Replace, OR Append.
+      // Given user might be loading their backup, appending might duplicate.
+      // Let's deduce from context: "Restore reusable circuits".
+      // Safest is to add unique ones or just add all and let user manage.
+      // Duplicate names might be confusing though.
+      // Let's add them, checking for name collisions is complex UI.
+
+      for (var bp in jsonList) {
+        // Check if exists?
+        bool exists = customCircuits.any((c) => c.name == bp['name']);
+        if (!exists) {
+          customCircuits.add(SavedCircuit.fromJson(bp));
+        } else {
+          // Optional: update existing?
+          // customCircuits.removeWhere((c) => c.name == bp['name']);
+          // customCircuits.add(SavedCircuit.fromJson(bp));
+        }
+      }
+      notifyListeners();
+      print("Imported ${jsonList.length} blueprints.");
+    } catch (e) {
+      print("Error importing blueprints: $e");
+    }
   }
 
   void unpackIntegratedCircuit(IntegratedCircuit ic) {

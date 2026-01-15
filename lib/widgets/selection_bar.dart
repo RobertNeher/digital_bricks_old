@@ -40,6 +40,11 @@ class SelectionBar extends StatelessWidget {
                   "Custom",
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.file_upload, size: 16),
+                  onPressed: () => provider.importBlueprints(),
+                  tooltip: "Import Blueprints",
+                ),
                 initiallyExpanded: true,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 8),
                 childrenPadding: EdgeInsets.zero,
