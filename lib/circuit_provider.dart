@@ -426,9 +426,15 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.circuitInput:
         comp = CircuitInput(id: id, position: pos);
+        if (json.containsKey('label')) {
+          (comp as CircuitInput).label = json['label'];
+        }
         break;
       case ComponentType.circuitOutput:
         comp = CircuitOutput(id: id, position: pos);
+        if (json.containsKey('label')) {
+          (comp as CircuitOutput).label = json['label'];
+        }
         break;
     }
 

@@ -181,7 +181,18 @@ class ComponentWidget extends StatelessWidget {
                                 : (component is CircuitOutput)
                                 ? (component as CircuitOutput).label
                                 : component.name,
-                            style: const TextStyle(fontSize: 10),
+                            style: TextStyle(
+                              fontSize:
+                                  (component is CircuitInput ||
+                                      component is CircuitOutput)
+                                  ? 12
+                                  : 10,
+                              fontWeight:
+                                  (component is CircuitInput ||
+                                      component is CircuitOutput)
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                         // For ConstantSource
