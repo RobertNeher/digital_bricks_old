@@ -554,8 +554,10 @@ class CircuitProvider extends ChangeNotifier {
     }
   }
 
-  void saveSelectionAsCustom(String name) {
+  void saveSelectionAsCustom(String rawName) {
     if (selectedComponentIds.isEmpty) return;
+    String name = rawName.trim();
+    if (name.isEmpty) return;
 
     // 1. Identify components
     List<LogicComponent> selectedComps = components
@@ -630,12 +632,22 @@ class CircuitProvider extends ChangeNotifier {
         if (inp.outputs.isNotEmpty) {
           inputPorts.add(inp.outputs[0].id);
         }
+        if (inp.label.isNotEmpty) {
+          inputLabels.add(inp.label);
+        } else {
+          inputLabels.add("In ${inputPorts.length}");
+        }
       }
 
       for (var out in explicitOutputs) {
         // CircuitOutput acts as a sink in the internal circuit.
         if (out.inputs.isNotEmpty) {
           outputPorts.add(out.inputs[0].id);
+        }
+        if (out.label.isNotEmpty) {
+          outputLabels.add(out.label);
+        } else {
+          outputLabels.add("Out ${outputPorts.length}");
         }
       }
     }
@@ -671,7 +683,20 @@ class CircuitProvider extends ChangeNotifier {
       outputLabels: outputLabels,
     );
 
-    customCircuits.add(blueprint);
+    // Check for existing by name (case-insensitive)
+    int existingIndex = customCircuits.indexWhere(
+      (c) => c.name.toLowerCase() == name.toLowerCase(),
+    );
+
+    if (existingIndex != -1) {
+      debugPrint(
+        "Overwriting existing blueprint: ${customCircuits[existingIndex].name} with $name",
+      );
+      customCircuits[existingIndex] = blueprint;
+    } else {
+      debugPrint("Saving new blueprint: $name");
+      customCircuits.add(blueprint);
+    }
     _saveBlueprints();
     notifyListeners();
   }
