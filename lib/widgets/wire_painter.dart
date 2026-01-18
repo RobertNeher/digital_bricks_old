@@ -3,6 +3,7 @@ import '../models/connection.dart';
 import '../models/logic_component.dart';
 // import '../models/gates.dart';
 import '../models/io_devices.dart';
+import '../models/integrated_circuit.dart';
 
 class WirePainter extends CustomPainter {
   final List<Connection> connections;
@@ -96,6 +97,20 @@ class WirePainter extends CustomPainter {
       double pinH = c.inputs.length * 20.0;
       height = fontH > pinH ? fontH : pinH;
       width = fontH * 0.8;
+    }
+
+    if (c is IntegratedCircuit) {
+      double maxInW = 0;
+      double maxOutW = 0;
+      const double charWidth = 8.0;
+
+      for (var l in c.blueprint.inputLabels) {
+        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
+      }
+      for (var l in c.blueprint.outputLabels) {
+        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
+      }
+      width = 60.0 + maxInW + maxOutW;
     }
 
     double totalWidth = width + 20;

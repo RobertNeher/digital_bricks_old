@@ -5,6 +5,7 @@ import '../models/logic_component.dart'; // Needed for type
 import '../models/connection.dart';
 import '../models/io_devices.dart'; // For SegmentDisplay check
 import '../models/saved_circuit.dart';
+import '../models/integrated_circuit.dart';
 import 'component_widget.dart';
 import 'wire_painter.dart';
 import 'grid_painter.dart';
@@ -270,6 +271,20 @@ class _CircuitBoardState extends State<CircuitBoard> {
       double pinH = c.inputs.length * 20.0;
       height = fontH > pinH ? fontH : pinH;
       width = fontH * 0.8;
+    }
+
+    if (c is IntegratedCircuit) {
+      double maxInW = 0;
+      double maxOutW = 0;
+      const double charWidth = 8.0;
+
+      for (var l in c.blueprint.inputLabels) {
+        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
+      }
+      for (var l in c.blueprint.outputLabels) {
+        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
+      }
+      width = 60.0 + maxInW + maxOutW;
     }
     double totalWidth = width + 20;
 

@@ -6,6 +6,7 @@ import 'pin.dart';
 import 'gates.dart';
 import 'io_devices.dart';
 import 'memory.dart';
+import 'circuit_io.dart';
 // import 'package:uuid/uuid.dart';
 
 class IntegratedCircuit extends LogicComponent {
@@ -151,8 +152,14 @@ class IntegratedCircuit extends LogicComponent {
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
         return IntegratedCircuit(id: compId, position: pos, blueprint: bp);
-      default:
-        return AndGate(id: compId, position: pos); // Fallback
+      case ComponentType.circuitInput:
+        var ci = CircuitInput(id: compId, position: pos);
+        if (json.containsKey('label')) ci.label = json['label'];
+        return ci;
+      case ComponentType.circuitOutput:
+        var co = CircuitOutput(id: compId, position: pos);
+        if (json.containsKey('label')) co.label = json['label'];
+        return co;
     }
   }
 
