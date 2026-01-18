@@ -77,9 +77,34 @@ class MainScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              // TODO: clear
-              // For now just manually select all?
-              // Provider doesn't have clear.
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text("Clear Workspace"),
+                  content: const Text(
+                    "Are you sure you want to clear the entire circuit?\nUnsaved changes will be lost.",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Cancel"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Provider.of<CircuitProvider>(
+                          context,
+                          listen: false,
+                        ).clearCircuit();
+                      },
+                      child: const Text(
+                        "Clear",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],

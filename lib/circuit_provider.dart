@@ -213,6 +213,14 @@ class CircuitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearCircuit() {
+    components.clear();
+    connections.clear();
+    selectedComponentIds.clear();
+    currentFilePath = null;
+    notifyListeners();
+  }
+
   void alignSelectedComponents(String axis) {
     if (selectedComponentIds.length < 2) return;
 
