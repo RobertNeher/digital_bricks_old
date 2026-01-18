@@ -198,6 +198,24 @@ class CircuitProvider extends ChangeNotifier {
 
   bool isSelected(String id) => selectedComponentIds.contains(id);
 
+  void selectAll() {
+    selectedComponentIds.clear();
+    for (var c in components) {
+      selectedComponentIds.add(c.id);
+    }
+    notifyListeners();
+  }
+
+  void moveSelectedComponents(Offset delta) {
+    if (selectedComponentIds.isEmpty) return;
+    for (var c in components) {
+      if (selectedComponentIds.contains(c.id)) {
+        c.position += delta;
+      }
+    }
+    notifyListeners();
+  }
+
   // --- Bulk Actions ---
 
   void deleteSelectedComponents() {
