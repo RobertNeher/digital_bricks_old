@@ -26,8 +26,10 @@ class ComponentWidget extends StatelessWidget {
     int maxPins = component.inputs.length > component.outputs.length
         ? component.inputs.length
         : component.outputs.length;
-    if (maxPins > 3) {
-      height = maxPins * 20.0;
+    // Fix for overflow: Increase height per pin and ensure enough space
+    if (maxPins > 2) {
+      height = maxPins * 24.0;
+      if (height < 60) height = 60;
     }
     double width = 60.0;
     if (component is SegmentDisplay) {
@@ -59,91 +61,100 @@ class ComponentWidget extends StatelessWidget {
       width = 60.0 + maxInW + maxOutW;
     }
 
-    return GestureDetector(
-      onTap: () {
-        // Toggle selection
-        Provider.of<CircuitProvider>(
-          context,
-          listen: false,
-        ).toggleComponentSelection(component.id);
-      },
-      onPanUpdate: (details) {
-        final provider = Provider.of<CircuitProvider>(context, listen: false);
+    return Container(
+      width: width + 20, // space for pins
+      height: height,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Inputs
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start, // Align to left edge
+            children: component.inputs.asMap().entries.map((entry) {
+              int idx = entry.key;
+              var p = entry.value;
+              Widget pinWidget = PinWidget(pin: p);
 
-        // If this component isn't selected, select it exclusively (drag logic usually)
-        // Or if it IS selected, move ALL selected.
-        if (!provider.isSelected(component.id)) {
-          // If dragging something unselected, select just it (classic behavior)
-          provider.selectComponent(component.id);
-        }
-
-        // Move all selected components
-        for (var id in provider.selectedComponentIds) {
-          var comp = provider.components.firstWhere((c) => c.id == id);
-          comp.position += details.delta;
-        }
-
-        provider.refresh();
-      },
-      onPanEnd: (details) {
-        final provider = Provider.of<CircuitProvider>(context, listen: false);
-        double gs = CircuitProvider.gridSize;
-
-        // Snap ALL selected components
-        for (var id in provider.selectedComponentIds) {
-          var comp = provider.components.firstWhere((c) => c.id == id);
-          double snapX = (comp.position.dx / gs).round() * gs;
-          double snapY = (comp.position.dy / gs).round() * gs;
-          comp.position = Offset(snapX, snapY);
-        }
-
-        provider.refresh();
-      },
-      onSecondaryTap: () {
-        _showContextMenu(context);
-      },
-      child: Container(
-        width: width + 20, // space for pins
-        height: height,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Inputs
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start, // Align to left edge
-              children: component.inputs.asMap().entries.map((entry) {
-                int idx = entry.key;
-                var p = entry.value;
-                Widget pinWidget = PinWidget(pin: p);
-
-                if (component is IntegratedCircuit) {
-                  var ic = component as IntegratedCircuit;
-                  String label = "";
-                  if (idx < ic.blueprint.inputLabels.length) {
-                    label = ic.blueprint.inputLabels[idx];
-                  }
-                  if (label.isNotEmpty) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        pinWidget,
-                        const SizedBox(width: 4),
-                        Text(label, style: const TextStyle(fontSize: 10)),
-                      ],
-                    );
-                  }
+              if (component is IntegratedCircuit) {
+                var ic = component as IntegratedCircuit;
+                String label = "";
+                if (idx < ic.blueprint.inputLabels.length) {
+                  label = ic.blueprint.inputLabels[idx];
                 }
-                return pinWidget;
-              }).toList(),
-            ),
-            // Body
-            Expanded(
-              child: Consumer<CircuitProvider>(
-                builder: (context, provider, child) {
-                  bool isSelected = provider.isSelected(component.id);
-                  return Container(
+                if (label.isNotEmpty) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      pinWidget,
+                      const SizedBox(width: 4),
+                      Text(label, style: const TextStyle(fontSize: 10)),
+                    ],
+                  );
+                }
+              }
+              return pinWidget;
+            }).toList(),
+          ),
+          // Body
+          Expanded(
+            child: Consumer<CircuitProvider>(
+              builder: (context, provider, child) {
+                bool isSelected = provider.isSelected(component.id);
+                return GestureDetector(
+                  onTap: () {
+                    // Toggle selection
+                    Provider.of<CircuitProvider>(
+                      context,
+                      listen: false,
+                    ).toggleComponentSelection(component.id);
+                  },
+                  onPanUpdate: (details) {
+                    final provider = Provider.of<CircuitProvider>(
+                      context,
+                      listen: false,
+                    );
+
+                    // If this component isn't selected, select it exclusively (drag logic usually)
+                    // Or if it IS selected, move ALL selected.
+                    if (!provider.isSelected(component.id)) {
+                      // If dragging something unselected, select just it (classic behavior)
+                      provider.selectComponent(component.id);
+                    }
+
+                    // Move all selected components
+                    for (var id in provider.selectedComponentIds) {
+                      var comp = provider.components.firstWhere(
+                        (c) => c.id == id,
+                      );
+                      comp.position += details.delta;
+                    }
+
+                    provider.refresh();
+                  },
+                  onPanEnd: (details) {
+                    final provider = Provider.of<CircuitProvider>(
+                      context,
+                      listen: false,
+                    );
+                    double gs = CircuitProvider.gridSize;
+
+                    // Snap ALL selected components
+                    for (var id in provider.selectedComponentIds) {
+                      var comp = provider.components.firstWhere(
+                        (c) => c.id == id,
+                      );
+                      double snapX = (comp.position.dx / gs).round() * gs;
+                      double snapY = (comp.position.dy / gs).round() * gs;
+                      comp.position = Offset(snapX, snapY);
+                    }
+
+                    provider.refresh();
+                  },
+                  onSecondaryTap: () {
+                    _showContextMenu(context);
+                  },
+                  child: Container(
                     decoration: BoxDecoration(
                       border: isSelected
                           ? Border.all(color: Colors.blueAccent, width: 2)
@@ -258,41 +269,41 @@ class ComponentWidget extends StatelessWidget {
                           ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-            // Outputs
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end, // Align to right edge
-              children: component.outputs.asMap().entries.map((entry) {
-                int idx = entry.key;
-                var p = entry.value;
-                Widget pinWidget = PinWidget(pin: p);
+          ),
+          // Outputs
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end, // Align to right edge
+            children: component.outputs.asMap().entries.map((entry) {
+              int idx = entry.key;
+              var p = entry.value;
+              Widget pinWidget = PinWidget(pin: p);
 
-                if (component is IntegratedCircuit) {
-                  var ic = component as IntegratedCircuit;
-                  String label = "";
-                  if (idx < ic.blueprint.outputLabels.length) {
-                    label = ic.blueprint.outputLabels[idx];
-                  }
-                  if (label.isNotEmpty) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(label, style: const TextStyle(fontSize: 10)),
-                        const SizedBox(width: 4),
-                        pinWidget,
-                      ],
-                    );
-                  }
+              if (component is IntegratedCircuit) {
+                var ic = component as IntegratedCircuit;
+                String label = "";
+                if (idx < ic.blueprint.outputLabels.length) {
+                  label = ic.blueprint.outputLabels[idx];
                 }
-                return pinWidget;
-              }).toList(),
-            ),
-          ],
-        ),
+                if (label.isNotEmpty) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(label, style: const TextStyle(fontSize: 10)),
+                      const SizedBox(width: 4),
+                      pinWidget,
+                    ],
+                  );
+                }
+              }
+              return pinWidget;
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

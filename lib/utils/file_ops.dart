@@ -12,6 +12,8 @@ abstract class FileOps {
   static Future<String> readFileFromPath(String path) =>
       FileOpsImpl.readFileFromPath(path);
   static Future<PlatformFile?> pickFile() => FileOpsImpl.pickFile();
+  static Future<List<String>> listFiles(String path) =>
+      FileOpsImpl.listFiles(path);
   static Future<String?> getAssetsDirectory() =>
       FileOpsImpl.getAssetsDirectory();
   static String get pathSeparator => FileOpsImpl.pathSeparator;

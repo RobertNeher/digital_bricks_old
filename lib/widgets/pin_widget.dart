@@ -60,12 +60,18 @@ class PinWidget extends StatelessWidget {
             ),
           ),
           child: Container(
-            width: 12, // Hit box size
-            height: 12, // Hit box size
-            decoration: BoxDecoration(
-              color: candidateData.isNotEmpty ? Colors.blue : color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.black, width: 1),
+            width: 24, // Increased hit target
+            height: 24,
+            alignment: Alignment.center,
+            color: Colors.transparent, // Capture taps
+            child: Container(
+              width: 12, // Visible Size
+              height: 12, // Visible Size
+              decoration: BoxDecoration(
+                color: candidateData.isNotEmpty ? Colors.blue : color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 1),
+              ),
             ),
           ),
         );

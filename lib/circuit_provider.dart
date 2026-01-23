@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -383,6 +384,14 @@ class CircuitProvider extends ChangeNotifier {
     Offset pos = Offset(json['position_dx'], json['position_dy']);
     String id = json['id'];
 
+    // HEURISTIC FIX: Detect enum drift in old files (CircuitInput 20 -> 19 as RsFlipFlop)
+    if (type == ComponentType.rsFlipFlop && json.containsKey('label')) {
+      debugPrint(
+        "Correcting component type from RsFlipFlop to CircuitInput (Enum Drift Fix)",
+      );
+      type = ComponentType.circuitInput;
+    }
+
     LogicComponent? comp;
 
     switch (type) {
@@ -536,48 +545,146 @@ class CircuitProvider extends ChangeNotifier {
 
   // --- Custom Components (Blueprints) ---
   List<SavedCircuit> customCircuits = [];
+  int _loadedVersion = -1;
+
+  void _sortBlueprints() {
+    customCircuits.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+  }
 
   Future<void> loadBlueprints() async {
+    print("loadBlueprints: Starting...");
     try {
-      String? appDir = await FileOps.getAssetsDirectory();
-      if (appDir == null) return;
+      if (kIsWeb) {
+        // --- WEB STRATEGY: PROBING ---
+        print("loadBlueprints: Web Mode detected. Using Probing Strategy.");
 
-      String path = '$appDir${FileOps.pathSeparator}blueprints.json';
-      String content = "";
+        String bestAssetKey = 'assets/blueprints.json';
+        int maxVersion = -1;
 
-      print("Loading blueprints from $path");
-      try {
-        content = await FileOps.readFileFromPath(path);
-      } catch (e) {
-        print("No blueprints file found or read error: $e");
-        return;
+        int consecutiveFailures = 0;
+        int gapTolerance = 2;
+
+        // Probe range 1 to 50
+        for (int i = 1; i <= 50; i++) {
+          String candidateKey = 'assets/blueprints ($i).json';
+          try {
+            await rootBundle.loadString(candidateKey);
+            maxVersion = i;
+            bestAssetKey = candidateKey;
+            consecutiveFailures = 0;
+            print("  Found: $candidateKey (v$i)");
+          } catch (e) {
+            consecutiveFailures++;
+            if (consecutiveFailures > gapTolerance) break;
+          }
+        }
+
+        print("loadBlueprints: Best Web file is $bestAssetKey (v$maxVersion)");
+        await _loadFromAsset(bestAssetKey);
+      } else {
+        // --- NATIVE STRATEGY: FILESYSTEM ---
+        print("loadBlueprints: Native Mode detected. Using FileSystem Scan.");
+
+        String? appDir = await FileOps.getAssetsDirectory();
+        if (appDir == null) {
+          print("loadBlueprints: Asset directory null. Aborting.");
+          return;
+        }
+
+        List<String> files = await FileOps.listFiles(appDir);
+        // Match "blueprints (N).json" or "blueprints(N).json" etc.
+        final RegExp versionPattern = RegExp(
+          r'blueprints\s*\(?(\d+)\)?\.json$',
+        );
+
+        String? bestFile;
+        int maxVersion = -1;
+
+        for (String filePath in files) {
+          String fileName = filePath.split(FileOps.pathSeparator).last;
+          final match = versionPattern.firstMatch(fileName);
+          if (match != null) {
+            int version = int.parse(match.group(1)!);
+            if (version > maxVersion) {
+              maxVersion = version;
+              bestFile = filePath;
+            }
+          }
+        }
+
+        if (bestFile != null) {
+          print(
+            "loadBlueprints: Found latest native file: $bestFile (v$maxVersion)",
+          );
+          await _loadFromFilePath(bestFile);
+        } else {
+          String defaultPath = '$appDir${FileOps.pathSeparator}blueprints.json';
+          print(
+            "loadBlueprints: No versioned files found. Trying default: $defaultPath",
+          );
+          await _loadFromFilePath(defaultPath);
+        }
       }
 
-      if (content.isEmpty) return;
-
-      List<dynamic> jsonList = jsonDecode(content);
-      customCircuits.clear();
-      for (var bp in jsonList) {
-        customCircuits.add(SavedCircuit.fromJson(bp));
-      }
-      print("Loaded ${customCircuits.length} blueprints");
       notifyListeners();
     } catch (e) {
-      print("Error loading blueprints: $e");
+      print("loadBlueprints: Fatal error: $e");
     }
+  }
+
+  Future<void> _loadFromAsset(String assetKey) async {
+    try {
+      String content = await rootBundle.loadString(assetKey);
+      _parseAndLoad(content);
+    } catch (e) {
+      print("Error loading asset $assetKey: $e");
+    }
+  }
+
+  Future<void> _loadFromFilePath(String path) async {
+    try {
+      String content = await FileOps.readFileFromPath(path);
+      _parseAndLoad(content);
+    } catch (e) {
+      print("Error loading file $path: $e");
+    }
+  }
+
+  void _parseAndLoad(String content) {
+    if (content.isEmpty) return;
+    List<dynamic> jsonList = jsonDecode(content);
+    customCircuits.clear();
+    for (var bp in jsonList) {
+      customCircuits.add(SavedCircuit.fromJson(bp));
+    }
+    print("loadBlueprints: Loaded ${customCircuits.length} blueprints.");
   }
 
   Future<void> _saveBlueprints() async {
     try {
       String? appDir = await FileOps.getAssetsDirectory();
 
+      // Increment version for save
+      // If loaded version was -1 (default), next is 1.
+      // If loaded version was 5, next is 6.
+      int nextVersion = (_loadedVersion < 0) ? 1 : _loadedVersion + 1;
+
+      // Update loaded version for subsequent saves
+      _loadedVersion = nextVersion;
+
+      String fileName = 'blueprints ($nextVersion).json';
+
       String path;
       if (appDir == null) {
         // Fallback for web/no-fs: use simple filename to trigger download in FileOps
-        path = 'blueprints.json';
+        path = fileName;
       } else {
-        path = '$appDir${FileOps.pathSeparator}blueprints.json';
+        path = '$appDir${FileOps.pathSeparator}$fileName';
       }
+
+      print("Saving blueprints to version $nextVersion: $path");
 
       String content = jsonEncode(
         customCircuits.map((e) => e.toJson()).toList(),
@@ -732,6 +839,7 @@ class CircuitProvider extends ChangeNotifier {
       debugPrint("Saving new blueprint: $name");
       customCircuits.add(blueprint);
     }
+    _sortBlueprints();
     _saveBlueprints();
     notifyListeners();
   }
@@ -806,59 +914,118 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void unpackIntegratedCircuit(IntegratedCircuit ic) {
-    debugPrint("Unpacking IC: ${ic.id}, Blueprint: ${ic.blueprint.name}");
+    debugPrint("Unpacking IC: ${ic.id}");
 
     // 1. Capture external connections BEFORE removing IC
     List<Connection> incoming = [];
     List<Connection> outgoing = [];
 
-    // We need to iterate a copy because we might modify connections? No, just reading.
     for (var conn in connections) {
       if (conn.targetPinId.startsWith(ic.id)) incoming.add(conn);
       if (conn.sourcePinId.startsWith(ic.id)) outgoing.add(conn);
     }
 
-    // 2. Remove IC from components list (without triggering connection removal yet)
+    // 2. Remove IC logic
     components.remove(ic);
-
-    // 3. Remove the OLD connections to the IC from the list
-    // (we will add replacements, so we remove the objects that point to IC pins)
     for (var c in incoming) connections.remove(c);
     for (var c in outgoing) connections.remove(c);
 
-    // 4. Add Internal Components
+    // 3. Prepare Internal Components with NEW IDs
     String groupId = const Uuid().v4();
-    debugPrint("Generated Group ID: $groupId");
+    Map<String, String> idMap = {}; // Old Comp ID -> New Comp ID
+    List<LogicComponent> newComponents = [];
 
-    for (var comp in ic.internalComponents) {
-      // Internal components have relative positions. Make them absolute.
-      // We need to create COPIES because the instances in IC might be reused if we re-save?
-      // Actually, once exploded, the IC is gone. We can reuse the instances.
-      // BUT we need to update their positions.
-      comp.position += ic.position;
-      comp.icGroupId = groupId;
-      comp.icBlueprintName = ic.blueprint.name;
-      debugPrint(
-        "Setting component ${comp.id} group to $groupId, BP: ${ic.blueprint.name}",
-      );
-      components.add(comp);
+    // Serialize current state to preserve flip-flop values etc.
+    List<Map<String, dynamic>> compsJson = ic.internalComponents
+        .map((c) => c.toJson())
+        .toList();
+
+    for (var compJson in compsJson) {
+      String oldId = compJson['id'];
+      String newId = const Uuid().v4();
+      idMap[oldId] = newId;
+
+      // Update JSON with new ID
+      compJson['id'] = newId;
+
+      // Adjust position to absolute
+      if (compJson.containsKey('position_dx') &&
+          compJson.containsKey('position_dy')) {
+        double relX = compJson['position_dx'];
+        double relY = compJson['position_dy'];
+        compJson['position_dx'] = relX + ic.position.dx;
+        compJson['position_dy'] = relY + ic.position.dy;
+      }
+
+      // Re-hydrate
+      try {
+        LogicComponent newComp = _deserializeComponent(compJson);
+        newComp.icGroupId = groupId;
+        newComp.icBlueprintName = ic.blueprint.name;
+        newComponents.add(newComp);
+      } catch (e) {
+        debugPrint("Error deserializing component during unpack: $e");
+      }
     }
 
-    // 5. Add Internal Connections
-    connections.addAll(ic.internalConnections);
+    components.addAll(newComponents);
 
-    // 6. Reconnect External Wires
+    // Select the new components to restore the "overlay" and give immediate control
+    selectedComponentIds.clear();
+    selectedComponentIds.addAll(newComponents.map((c) => c.id));
+
+    // 4. Add Internal Connections with UPDATED IDs
+    // Helper to find new pin ID given old pin ID (e.g. "oldId-in-0" -> "newId-in-0")
+    String? remapPinId(String oldPinId) {
+      for (var oldId in idMap.keys) {
+        if (oldPinId.startsWith(oldId)) {
+          String suffix = oldPinId.substring(oldId.length);
+          String newId = idMap[oldId]!;
+          return "$newId$suffix";
+        }
+      }
+      return null;
+    }
+
+    for (var conn in ic.internalConnections) {
+      String? newSource = remapPinId(conn.sourcePinId);
+      String? newTarget = remapPinId(conn.targetPinId);
+
+      if (newSource != null && newTarget != null) {
+        connections.add(
+          Connection(
+            id: const Uuid().v4(),
+            sourcePinId: newSource,
+            targetPinId: newTarget,
+          ),
+        );
+      }
+    }
+
+    // 5. Reconnect External Wires
     for (var conn in incoming) {
-      String? internalPinId = ic.inputMap[conn.targetPinId];
-      if (internalPinId != null) {
-        addConnection(conn.sourcePinId, internalPinId);
+      if (!conn.targetPinId.contains("-in-")) continue;
+      String indexStr = conn.targetPinId.split("-in-").last;
+      int? index = int.tryParse(indexStr);
+
+      if (index != null && index < ic.blueprint.inputPorts.length) {
+        String oldInternalPinId = ic.blueprint.inputPorts[index];
+        String? newInternalPinId = remapPinId(oldInternalPinId);
+        if (newInternalPinId != null)
+          addConnection(conn.sourcePinId, newInternalPinId);
       }
     }
 
     for (var conn in outgoing) {
-      String? internalPinId = ic.outputMap[conn.sourcePinId];
-      if (internalPinId != null) {
-        addConnection(internalPinId, conn.targetPinId);
+      if (!conn.sourcePinId.contains("-out-")) continue;
+      String indexStr = conn.sourcePinId.split("-out-").last;
+      int? index = int.tryParse(indexStr);
+
+      if (index != null && index < ic.blueprint.outputPorts.length) {
+        String oldInternalPinId = ic.blueprint.outputPorts[index];
+        String? newInternalPinId = remapPinId(oldInternalPinId);
+        if (newInternalPinId != null)
+          addConnection(newInternalPinId, conn.targetPinId);
       }
     }
 

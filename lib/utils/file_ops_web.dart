@@ -49,6 +49,11 @@ class FileOpsImpl {
     return "";
   }
 
+  static Future<List<String>> listFiles(String path) async {
+    // Web cannot list files from user system
+    return [];
+  }
+
   static Future<String?> getAssetsDirectory() async {
     // No assets directory access on web in this mode.
     return null;

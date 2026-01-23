@@ -55,6 +55,19 @@ class FileOpsImpl {
     return "";
   }
 
+  static Future<List<String>> listFiles(String path) async {
+    final dir = Directory(path);
+    if (await dir.exists()) {
+      try {
+        final entities = await dir.list().toList();
+        return entities.map((e) => e.path).toList();
+      } catch (e) {
+        print("Error listing files at $path: $e");
+      }
+    }
+    return [];
+  }
+
   static Future<String?> getAssetsDirectory() async {
     final path = "${Directory.current.path}${Platform.pathSeparator}assets";
     final dir = Directory(path);
