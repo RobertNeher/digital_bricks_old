@@ -52,3 +52,69 @@ class DFlipFlop extends LogicComponent {
     outputs[1].value = !val;
   }
 }
+
+class RsFlipFlop extends LogicComponent {
+  bool _storedValue = false;
+
+  // Note: We don't have a clock, so we just check state changes or steady state?
+  // RS Flip Flop (NOR-based usually):
+  // S=1, R=0 -> Set (1)
+  // S=0, R=1 -> Reset (0)
+  // S=0, R=0 -> Hold
+  // S=1, R=1 -> Invalid (usually Q=0, Qnot=0 in NOR latch)
+
+  RsFlipFlop({super.id, required super.position})
+    : super(name: 'RS-FF', type: ComponentType.rsFlipFlop) {
+    // Inputs: 0: S, 1: R
+    addInputPin(); // S
+    addInputPin(); // R
+
+    // Outputs: 0: Q, 1: Q_not
+    addOutputPin(); // Q
+    addOutputPin(); // Q_not
+
+    // Initial state
+    outputs[0].value = false;
+    outputs[1].value = true;
+  }
+
+  @override
+  void evaluate() {
+    if (inputs.length < 2) return;
+
+    bool s = inputs[0].value;
+    bool r = inputs[1].value;
+
+    if (s && !r) {
+      _storedValue = true;
+    } else if (!s && r) {
+      _storedValue = false;
+    } else if (s && r) {
+      // Invalid state. For NOR latch, both outputs go Low.
+      _storedValue = false;
+    }
+    // Else 0,0 -> Hold
+
+    outputs[0].value = _storedValue;
+    outputs[1].value = !_storedValue;
+
+    // Correction for S=1, R=1:
+    if (s && r) {
+      outputs[0].value = false;
+      outputs[1].value = false;
+    }
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final json = super.toJson();
+    json['storedValue'] = _storedValue;
+    return json;
+  }
+
+  void setStoredValue(bool val) {
+    _storedValue = val;
+    outputs[0].value = val;
+    outputs[1].value = !val;
+  }
+}

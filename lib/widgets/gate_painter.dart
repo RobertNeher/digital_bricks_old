@@ -58,6 +58,10 @@ class GatePainter extends CustomPainter {
         _drawBox(path, size);
         _drawDFFSymbols(canvas, size); // Custom drawing for labels/clock
         break;
+      case ComponentType.rsFlipFlop:
+        _drawBox(path, size);
+        _drawRSFFSymbols(canvas, size);
+        break;
       case ComponentType.circuitInput:
         _drawTerminal(canvas, size, Colors.green[200]!);
         break;
@@ -123,6 +127,48 @@ class GatePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
+
+    // Q label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+
+    // Q_not label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 10,
+        decoration: TextDecoration.overline,
+      ),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
+  }
+
+  void _drawRSFFSymbols(Canvas canvas, Size size) {
+    // S (Set) at input 0 (top)
+    // R (Reset) at input 1 (bottom)
+    final textPaint = TextPainter(textDirection: TextDirection.ltr);
+
+    // S label
+    textPaint.text = const TextSpan(
+      text: 'S',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.25 - 5));
+
+    // R label
+    textPaint.text = const TextSpan(
+      text: 'R',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.75 - 5));
 
     // Q label
     textPaint.text = const TextSpan(

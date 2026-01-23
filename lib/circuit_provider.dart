@@ -446,6 +446,12 @@ class CircuitProvider extends ChangeNotifier {
           (comp as DFlipFlop).setStoredValue(json['storedValue']);
         }
         break;
+      case ComponentType.rsFlipFlop:
+        comp = RsFlipFlop(id: id, position: pos);
+        if (json.containsKey('storedValue')) {
+          (comp as RsFlipFlop).setStoredValue(json['storedValue']);
+        }
+        break;
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
         comp = IntegratedCircuit(id: id, position: pos, blueprint: bp);
@@ -510,6 +516,9 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.dFlipFlop:
         comp = DFlipFlop(id: id, position: pos);
+        break;
+      case ComponentType.rsFlipFlop:
+        comp = RsFlipFlop(id: id, position: pos);
         break;
       case ComponentType.custom:
         // Cannot add undefined custom component directly by type
