@@ -111,6 +111,8 @@ class ComponentWidget extends StatelessWidget {
             // Inputs
             Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Align to left edge
               children: component.inputs.asMap().entries.map((entry) {
                 int idx = entry.key;
                 var p = entry.value;
@@ -263,6 +265,7 @@ class ComponentWidget extends StatelessWidget {
             // Outputs
             Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.end, // Align to right edge
               children: component.outputs.asMap().entries.map((entry) {
                 int idx = entry.key;
                 var p = entry.value;

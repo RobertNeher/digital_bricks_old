@@ -350,13 +350,16 @@ class _CircuitBoardState extends State<CircuitBoard> {
   }
 
   Offset _calculatePinOffset(LogicComponent c, int index, bool isInput) {
+    // 1. Calculate Height correctly (matching ComponentWidget.build)
     double height = 60.0;
-    if (c.inputs.length > 3) {
-      height = c.inputs.length * 20.0;
+    int maxPins = c.inputs.length > c.outputs.length
+        ? c.inputs.length
+        : c.outputs.length;
+    if (maxPins > 3) {
+      height = maxPins * 20.0;
     }
     double width = 60.0;
     if (c is SegmentDisplay) {
-      // Logic matching ComponentWidget
       double fontH = c.fontSize;
       double pinH = c.inputs.length * 20.0;
       height = fontH > pinH ? fontH : pinH;
@@ -378,9 +381,21 @@ class _CircuitBoardState extends State<CircuitBoard> {
     }
     double totalWidth = width + 20;
 
+    // 2. Calculate Vertical Position correctly (matching MainAxisAlignment.spaceEvenly)
+    // Widget is 12x12 pixels.
+    const double pinSize = 12.0;
+
     int count = isInput ? c.inputs.length : c.outputs.length;
-    double step = height / (count + 1);
-    double y = c.position.dy + step * (index + 1);
+    // spaceEvenly formula:
+    // Gap = (TotalHeight - (Count * ItemSize)) / (Count + 1)
+    // TopPos(i) = Gap * (i+1) + ItemSize * i
+    // CenterPos(i) = TopPos(i) + ItemSize / 2
+
+    double gap = (height - (count * pinSize)) / (count + 1);
+    if (gap < 0) gap = 0; // Should not happen if height logic is correct
+
+    double topY = gap * (index + 1) + pinSize * index;
+    double y = c.position.dy + topY + pinSize / 2;
 
     double x = c.position.dx;
     if (isInput) {
