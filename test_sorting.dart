@@ -31,7 +31,7 @@ void main() {
 
   print('Result: Best file: $bestFile (Version $maxVersion)');
 
-  if (maxVersion == 10 && bestFile == 'path/to/blueprint10.json') {
+  if (maxVersion == 10 && bestFile == 'path/to/blueprint (10).json') {
     print('SUCCESS: Correctly identified highest version.');
   } else {
     print('FAILURE: Incorrect file selected.');
