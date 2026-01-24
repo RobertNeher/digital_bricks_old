@@ -4,6 +4,7 @@ import '../models/logic_component.dart';
 // import '../models/gates.dart';
 import '../models/io_devices.dart';
 import '../models/integrated_circuit.dart';
+import '../utils/component_layout.dart';
 
 class WirePainter extends CustomPainter {
   final List<Connection> connections;
@@ -65,74 +66,17 @@ class WirePainter extends CustomPainter {
       // Check Inputs
       for (int i = 0; i < c.inputs.length; i++) {
         if (c.inputs[i].id == pinId) {
-          return _calculatePinOffset(c, i, true);
+          return ComponentLayout.getPinPosition(c, i, true);
         }
       }
       // Check Outputs
       for (int i = 0; i < c.outputs.length; i++) {
         if (c.outputs[i].id == pinId) {
-          return _calculatePinOffset(c, i, false);
+          return ComponentLayout.getPinPosition(c, i, false);
         }
       }
     }
     return null;
-  }
-
-  Offset _calculatePinOffset(LogicComponent c, int index, bool isInput) {
-    // Logic matching ComponentWidget layout
-    // Row(Inputs, Body, Outputs)
-
-    // 1. Height Calculation
-    double height = 60.0;
-    int maxPins = c.inputs.length > c.outputs.length
-        ? c.inputs.length
-        : c.outputs.length;
-    if (maxPins > 3) {
-      height = maxPins * 20.0;
-    }
-
-    double width = 60.0;
-    if (c is SegmentDisplay) {
-      double fontH = c.fontSize;
-      double pinH = c.inputs.length * 20.0;
-      height = fontH > pinH ? fontH : pinH;
-      width = fontH * 0.8;
-    }
-
-    if (c is IntegratedCircuit) {
-      double maxInW = 0;
-      double maxOutW = 0;
-      const double charWidth = 8.0;
-
-      for (var l in c.blueprint.inputLabels) {
-        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
-      }
-      for (var l in c.blueprint.outputLabels) {
-        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
-      }
-      width = 60.0 + maxInW + maxOutW;
-    }
-
-    double totalWidth = width + 20;
-
-    // 2. Vertical Position (MainAxisAlignment.spaceEvenly with 12px item size)
-    const double pinSize = 12.0;
-    int count = isInput ? c.inputs.length : c.outputs.length;
-
-    double gap = (height - (count * pinSize)) / (count + 1);
-    if (gap < 0) gap = 0;
-
-    double topY = gap * (index + 1) + pinSize * index;
-    double y = c.position.dy + topY + pinSize / 2;
-
-    double x = c.position.dx;
-    if (isInput) {
-      x += 6;
-    } else {
-      x += totalWidth - 6;
-    }
-
-    return Offset(x, y);
   }
 
   @override
