@@ -19,15 +19,10 @@ class IntegratedCircuit extends LogicComponent {
   final Map<String, String> outputMap = {};
 
   IntegratedCircuit({
-    required String id,
-    required Offset position,
+    required String super.id,
+    required super.position,
     required this.blueprint,
-  }) : super(
-         id: id,
-         name: blueprint.name,
-         position: position,
-         type: ComponentType.custom,
-       ) {
+  }) : super(name: blueprint.name, type: ComponentType.custom) {
     _initialize();
   }
 
@@ -146,13 +141,15 @@ class IntegratedCircuit extends LogicComponent {
         );
       case ComponentType.dFlipFlop:
         var ff = DFlipFlop(id: compId, position: pos);
-        if (json.containsKey('storedValue'))
+        if (json.containsKey('storedValue')) {
           ff.setStoredValue(json['storedValue']);
+        }
         return ff;
       case ComponentType.rsFlipFlop:
         var ff = RsFlipFlop(id: compId, position: pos);
-        if (json.containsKey('storedValue'))
+        if (json.containsKey('storedValue')) {
           ff.setStoredValue(json['storedValue']);
+        }
         return ff;
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
@@ -170,8 +167,12 @@ class IntegratedCircuit extends LogicComponent {
 
   Pin? _findInternalPin(String pinId) {
     for (var c in internalComponents) {
-      for (var p in c.inputs) if (p.id == pinId) return p;
-      for (var p in c.outputs) if (p.id == pinId) return p;
+      for (var p in c.inputs) {
+        if (p.id == pinId) return p;
+      }
+      for (var p in c.outputs) {
+        if (p.id == pinId) return p;
+      }
     }
     return null;
   }

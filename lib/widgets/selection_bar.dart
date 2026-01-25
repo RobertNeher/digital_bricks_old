@@ -60,7 +60,7 @@ class SelectionBar extends StatelessWidget {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.blue),
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withAlpha(80),
                         ),
                         child: Text(blueprint.name.toUpperCase()),
                       ),
@@ -205,7 +205,7 @@ class SelectionBar extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.blue),
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withAlpha(80),
           ),
           child: Text(type.name.toUpperCase()),
         ),

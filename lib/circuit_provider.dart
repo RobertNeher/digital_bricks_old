@@ -106,8 +106,12 @@ class CircuitProvider extends ChangeNotifier {
 
   Pin? _findPin(String pinId) {
     for (var c in components) {
-      for (var p in c.inputs) if (p.id == pinId) return p;
-      for (var p in c.outputs) if (p.id == pinId) return p;
+      for (var p in c.inputs) {
+        if (p.id == pinId) return p;
+      }
+      for (var p in c.outputs) {
+        if (p.id == pinId) return p;
+      }
     }
     return null;
   }
@@ -253,22 +257,30 @@ class CircuitProvider extends ChangeNotifier {
       double minX = selected
           .map((c) => c.position.dx)
           .reduce((a, b) => a < b ? a : b);
-      for (var c in selected) c.position = Offset(minX, c.position.dy);
+      for (var c in selected) {
+        c.position = Offset(minX, c.position.dy);
+      }
     } else if (axis == 'right') {
       double maxX = selected
           .map((c) => c.position.dx)
           .reduce((a, b) => a > b ? a : b);
-      for (var c in selected) c.position = Offset(maxX, c.position.dy);
+      for (var c in selected) {
+        c.position = Offset(maxX, c.position.dy);
+      }
     } else if (axis == 'top') {
       double minY = selected
           .map((c) => c.position.dy)
           .reduce((a, b) => a < b ? a : b);
-      for (var c in selected) c.position = Offset(c.position.dx, minY);
+      for (var c in selected) {
+        c.position = Offset(c.position.dx, minY);
+      }
     } else if (axis == 'bottom') {
       double maxY = selected
           .map((c) => c.position.dy)
           .reduce((a, b) => a > b ? a : b);
-      for (var c in selected) c.position = Offset(c.position.dx, maxY);
+      for (var c in selected) {
+        c.position = Offset(c.position.dx, maxY);
+      }
     }
 
     notifyListeners();
@@ -540,7 +552,7 @@ class CircuitProvider extends ChangeNotifier {
         break;
     }
 
-    addComponent(comp!);
+    addComponent(comp);
   }
 
   // --- Custom Components (Blueprints) ---
@@ -927,8 +939,12 @@ class CircuitProvider extends ChangeNotifier {
 
     // 2. Remove IC logic
     components.remove(ic);
-    for (var c in incoming) connections.remove(c);
-    for (var c in outgoing) connections.remove(c);
+    for (var c in incoming) {
+      connections.remove(c);
+    }
+    for (var c in outgoing) {
+      connections.remove(c);
+    }
 
     // 3. Prepare Internal Components with NEW IDs
     String groupId = const Uuid().v4();
@@ -1011,8 +1027,9 @@ class CircuitProvider extends ChangeNotifier {
       if (index != null && index < ic.blueprint.inputPorts.length) {
         String oldInternalPinId = ic.blueprint.inputPorts[index];
         String? newInternalPinId = remapPinId(oldInternalPinId);
-        if (newInternalPinId != null)
+        if (newInternalPinId != null) {
           addConnection(conn.sourcePinId, newInternalPinId);
+        }
       }
     }
 
@@ -1024,8 +1041,9 @@ class CircuitProvider extends ChangeNotifier {
       if (index != null && index < ic.blueprint.outputPorts.length) {
         String oldInternalPinId = ic.blueprint.outputPorts[index];
         String? newInternalPinId = remapPinId(oldInternalPinId);
-        if (newInternalPinId != null)
+        if (newInternalPinId != null) {
           addConnection(newInternalPinId, conn.targetPinId);
+        }
       }
     }
 
@@ -1143,7 +1161,9 @@ class CircuitProvider extends ChangeNotifier {
     }).toList();
 
     // Clean up old components and connections
-    for (var c in groupComps) components.remove(c);
+    for (var c in groupComps) {
+      components.remove(c);
+    }
     // remove connections involving them
     connections.removeWhere((conn) {
       return groupComps.any(

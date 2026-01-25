@@ -5,7 +5,7 @@ import 'logic_component.dart';
 class Oscillator extends LogicComponent {
   double frequency; // in Hz
   // Timer? _timer;
-  bool _isOn = false;
+  final bool _isOn = false;
 
   Oscillator({super.id, required super.position, this.frequency = 1.0})
     : super(name: 'OSC', type: ComponentType.oscillator) {
@@ -73,15 +73,19 @@ class SegmentDisplay extends LogicComponent {
     this.color = 0xFF4CAF50, // Green
     this.fontSize = 80.0,
   }) : super(
-         name: '${segments}-Seg',
+         name: '$segments-Seg',
          type: segments == 7 ? ComponentType.segment7 : ComponentType.segment16,
        ) {
     if (segments == 7) {
       // 4 inputs for Hex decoding (0-F)
-      for (int i = 0; i < 4; i++) addInputPin();
+      for (int i = 0; i < 4; i++) {
+        addInputPin();
+      }
     } else {
       // 7 inputs for ASCII (0-127) to cover A-Z, a-z
-      for (int i = 0; i < 7; i++) addInputPin();
+      for (int i = 0; i < 7; i++) {
+        addInputPin();
+      }
     }
   }
 
