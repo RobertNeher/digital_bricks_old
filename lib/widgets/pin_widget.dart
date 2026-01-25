@@ -55,7 +55,7 @@ class PinWidget extends StatelessWidget {
             width: 15,
             height: 15,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.5),
+              color: color.withAlpha(128),
               shape: BoxShape.circle,
             ),
           ),

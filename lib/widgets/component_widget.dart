@@ -61,7 +61,7 @@ class ComponentWidget extends StatelessWidget {
       width = 60.0 + maxInW + maxOutW;
     }
 
-    return Container(
+    return SizedBox(
       width: width + 20, // space for pins
       height: height,
       child: Row(
@@ -246,7 +246,7 @@ class ComponentWidget extends StatelessWidget {
                                   ),
                                   Center(
                                     child: Container(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color: Colors.white.withAlpha(70),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 2,
                                       ),

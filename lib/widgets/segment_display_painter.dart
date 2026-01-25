@@ -33,7 +33,7 @@ class SegmentDisplayPainter extends CustomPainter {
       ..strokeWidth = strokeWidth;
 
     final paintOff = Paint()
-      ..color = color.withOpacity(0.05)
+      ..color = color.withAlpha(13)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;

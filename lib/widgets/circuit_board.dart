@@ -176,7 +176,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
                             top: comp.position.dy,
                             child: ComponentWidget(component: comp),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
