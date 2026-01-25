@@ -63,8 +63,8 @@ Use the icons in the task bar on the top right:
 | \<up\> | Move selected items upwards |
 | \<down\> | Move selected items downwards |
 | \<left\> | Move selected items left |
+| \<right\> | Move selected items right |
 | Backspace | Delete selected items |
 | Del | Delete selected items |
 
-| \<right\> | Move selected items right |
 
