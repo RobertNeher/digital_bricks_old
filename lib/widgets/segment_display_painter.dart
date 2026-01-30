@@ -188,19 +188,25 @@ class SegmentDisplayPainter extends CustomPainter {
     canvas.save();
     canvas.translate(paddingX, paddingY);
 
-    final double gap = strokeWidth / 2;
+    // Dynamic stroke width for 16-segment scaling
+    // User requested increased thickness.
+    // Try 8% of width.
+    double localStroke = w * 0.12;
+    if (localStroke < 3.0) localStroke = 3.0;
+
+    final double gap = localStroke / 2;
 
     final paintOn = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
+      ..strokeWidth = localStroke;
 
     final paintOff = Paint()
       ..color = backgroundColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
+      ..strokeWidth = localStroke;
 
     void drawSeg(int bit, Path path) {
       bool isOn = (mask & (1 << bit)) != 0;

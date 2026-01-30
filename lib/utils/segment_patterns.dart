@@ -30,7 +30,23 @@ class SegmentPatterns {
   static const int M = 1 << 15; // Bottom Left Diag (inner)
 
   static const Map<int, int> _asciiMap = {
-    // Numbers
+    // Special chars
+    0x20: 0, // <blank>
+    0x21: I | L, // !
+    0x22: I | B, // "
+    0x23: B | C | G1 | G2 | I | L | D1 | D2, // #
+    0x24: A1 | A2 | F | G1 | G2 | C | D1 | D2 | I | L, // $
+    0x25: F | I | A1 | G1 | G2 | C | D1 | L | M | J, // %
+    0x26: A1 | I | H | G1 | E | K | D1 | D2, // &
+    0x27: I, // '
+    0x28: J | K, // (
+    0x29: H | M, // )
+    0x2A: H | J | K | M | G1 | G2 | I | L, // *
+    0x2B: G1 | G2 | I | L, // +
+    0x2C: M, // ,
+    0x2D: G1 | G2, // -
+    0x2E: D2, // .
+    0x2F: M | J, // /
     // Numbers
     0x30: A1 | A2 | B | C | D1 | D2 | E | F | K | M, // 0 (diagonal slash)
     0x31: B | C, // 1
@@ -42,9 +58,16 @@ class SegmentPatterns {
     0x37: A1 | A2 | B | C, // 7
     0x38: A1 | A2 | B | C | D1 | D2 | E | F | G1 | G2, // 8
     0x39: A1 | A2 | B | C | D1 | D2 | F | G1 | G2, // 9
+    0x3A: I | L, // |
+    0x3B: M | I, // ;
+    0x3C: G1 | J | K, // <
+    0x3D: D1 | D2 | G1 | G2, // =
+    0x3E: G2 | H | M, // >
+    0x3F: A1 | A2 | B | G2 | L, // ?
     // Letters
-    65: A1 | A2 | B | C | E | F | G1 | G2, // A
-    66:
+    0x40: A1 | A2 | B | D1 | D2 | E | F | G2 | I, // @
+    0x41: A1 | A2 | B | C | E | F | G1 | G2, // A
+    0x42:
         A1 |
         A2 |
         B |
@@ -54,40 +77,70 @@ class SegmentPatterns {
         I |
         L |
         G2, // B (Design 2: split middle vert)
-    67: A1 | A2 | F | E | D1 | D2, // C
-    68: A1 | A2 | B | C | D1 | D2 | I | L, // D
-    69: A1 | A2 | F | E | D1 | D2 | G1 | G2, // E
-    70: A1 | A2 | F | E | G1 | G2, // F
-    71: A1 | A2 | F | E | D1 | D2 | C | G2, // G
-    72: F | E | B | C | G1 | G2, // H
-    73: A1 | A2 | D1 | D2 | I | L, // I
-    74: B | C | D1 | D2 | E, // J
-    75: F | E | G1 | J | K, // K
-    76: F | E | D1 | D2, // L
-    77: F | E | B | C | H | J, // M
-    78: F | E | B | C | H | K, // N
-    61: G1 | G2 | D1 | D2, // = (Bottom line?) Or maybe G and D? A and G?
-    // Let's do G1|G2 for mid, and D1|D2 is too low.
-    // Maybe separate?
-    35: B | C | F | E | G1 | G2 | I | L, // #
-    47: M | J, // /
-    92: H | K, // \
-    40: J | K, // ( (Right facing paren) -> Actually diagonals H/M?
-    // usually ( starts top right goes bottom right?
-    // No, ( is left side.
-    // Let's use K and J adjusted? No.
-    // Let's use distinct diagonal segments.
-    41: H | M, // )
-    // Quotes
-    39: I, // '
-    34: I | B, // "
+    0x43: A1 | A2 | F | E | D1 | D2, // C
+    0x44: A1 | A2 | B | C | D1 | D2 | I | L, // D
+    0x45: A1 | A2 | F | E | D1 | D2 | G1 | G2, // E
+    0x46: A1 | A2 | F | E | G1 | G2, // F
+    0x47: A1 | A2 | F | E | D1 | D2 | C | G2, // G
+    0x48: F | E | B | C | G1 | G2, // H
+    0x49: A1 | A2 | D1 | D2 | I | L, // I
+    0x4A: B | C | D1 | D2 | E, // J
+    0x4B: F | E | G1 | J | K, // K
+    0x4C: F | E | D1 | D2, // L
+    0x4D: F | E | B | C | H | J, // M
+    0x4E: F | E | B | C | H | K, // N
+    0x4F: A1 | A2 | B | C | D1 | D2 | E | F, // O
+    0x50: A1 | A2 | B | E | F | G1 | G2, // P
+    0x51: A1 | A2 | B | C | D1 | D2 | E | F | K, // Q
+    0x52: A1 | A2 | B | E | F | G1 | G2 | K, // R
+    0x53: A1 | A2 | F | G1 | G2 | C | D1 | D2, // S
+    0x54: A1 | A2 | I | L, // T
+    0x55: B | C | D1 | D2 | E | F, // U
+    0x56: F | E | M | J, // V
+    0x57: F | E | B | C | M | K, // W
+    0x58: H | J | K | M, // X
+    0x59: B | C | D1 | D2 | F | G1 | G2, // Y
+    0x5A: A1 | A2 | J | M | D1 | D2, // Z
+    0x5B: I | L | A2 | D1, // [,
+    0x5C: H | K, // \
+    0x5D: I | L | A1 | D2, // ]
+    0x5E: M | K, // ^
+    0x5F: D1 | D2, // _
+    0x60: H, // `
+    0x61: D1 | D2 | E | L | G1, // a
+    0x62: F | E | D2 | E | L | G1, // a
+    0x63: D2 | G1 | E, // c
+    0x64: D1 | B | C | L | D1 | G2, // d
+    0x65: E | G1 | D2 | M, // e
+    0x66: A1 | A2 | F | E | G1 | G2, // f
+    0x67: A1 | A2 | F | E | D1 | D2 | C | G2, // g
+    0x68: F | E | B | C | G1 | G2, // h
+    0x69: A1 | A2 | D1 | D2 | I | L, // i
+    0x6A: B | C | D1 | D2 | E, // j
+    0x6B: F | E | G1 | J | K, // k
+    0x6C: F | E | D1 | D2, // l
+    0x6D: F | E | B | C | H | J, // m
+    0x6E: F | E | B | C | H | K, // n
+    0x6F: A1 | A2 | B | C | D1 | D2 | E | F, // o
+    0x70: A1 | A2 | B | E | F | G1 | G2, // p
+    0x71: A1 | A2 | B | C | D1 | D2 | E | F | K, // q
+    0x72: A1 | A2 | B | E | F | G1 | G2 | K, // r
+    0x73: A1 | A2 | F | G1 | G2 | C | D1 | D2, // s
+    0x74: A1 | A2 | I | L, // t
+    0x75: B | C | D1 | D2 | E | F, // u
+    0x76: F | E | M | J, // v
+    0x77: F | E | B | C | M | K, // w
+    0x78: H | J | K | M, // x
+    0x79: B | C | D1 | D2 | F | G1 | G2, // y
+    0x7A: A1 | A2 | J | M | D1 | D2, // z
+    0x7B: I | L | A2 | D1, // {
+    0x7C: I | L, // |
+    0x7D: I | L | A1 | D2, // }
+    0x7E: A1 | A2 | I | L, // ~
+    0x7F: I | L, // DEL
   };
 
   static int getMask(int ascii) {
-    // Determine letter case: map lower to upper
-    if (ascii >= 97 && ascii <= 122) {
-      ascii -= 32;
-    }
     return _asciiMap[ascii] ?? 0;
   }
 }
