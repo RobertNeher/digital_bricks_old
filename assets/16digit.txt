@@ -1,0 +1,7 @@
+       A1  A2
+     F \  |  / B
+     H  \ I / J
+        G1  G2
+     M  / L \ K
+     E /  |  \ C
+       D2  D1
