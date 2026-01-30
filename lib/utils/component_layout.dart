@@ -33,13 +33,33 @@ class ComponentLayout {
     double width = baseWidth;
     if (component is SegmentDisplay) {
       double fontH = component.fontSize;
-      double pinH =
-          component.inputs.length *
-          20.0; // Wait, SegDisplay uses 20.0 in ComponentWidget logic??
-      // Let's re-read ComponentWidget carefully.
-      // Line 39: double pinH = component.inputs.length * 20.0;
+      if (fontH < 30) fontH = 30; // Enforce minimum as per ComponentWidget
+
+      double pinH = component.inputs.length * 24.0;
       height = fontH > pinH ? fontH : pinH;
-      width = fontH * 0.8;
+      height += 10; // Extra padding as per ComponentWidget
+
+      bool is7Seg = component.segments == 7;
+      double ratio = is7Seg ? 0.6 : 0.8;
+      double bodyW = fontH * ratio;
+
+      // Dynamic Input Width
+      double maxLabelW = 0;
+      // Labels are 0..n-1. Max length is 1 or 2 usually.
+      String maxLabel = (component.inputs.length - 1).toString();
+      maxLabelW = maxLabel.length * 10.0; // approx 10px per char for bold text
+      if (maxLabelW < 10.0) maxLabelW = 10.0; // min width
+
+      double inputW = 24.0 + 8.0 + maxLabelW; // Pin + Gap + Label
+      double gapW = 20.0;
+
+      width = inputW + gapW + bodyW;
+
+      // ComponentWidget adds +20 at the return SizedBox.
+      // getComponentSize serves the "logical" size which typically INCLUDES visual additions?
+      // ComponentWidget returns `SizedBox(width: width + 20)`.
+      // So logical width should include that +20.
+      width += 20;
     }
 
     if (component is IntegratedCircuit) {

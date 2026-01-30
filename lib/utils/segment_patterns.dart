@@ -66,31 +66,6 @@ class SegmentPatterns {
     76: F | E | D1 | D2, // L
     77: F | E | B | C | H | J, // M
     78: F | E | B | C | H | K, // N
-    79: A1 | A2 | B | C | D1 | D2 | E | F, // O
-    80: A1 | A2 | B | F | E | G1 | G2, // P
-    81: A1 | A2 | B | C | D1 | D2 | E | F | K, // Q
-    82: A1 | A2 | B | F | E | G1 | G2 | K, // R
-    83: A1 | A2 | F | G1 | G2 | C | D1 | D2, // S
-    84: A1 | A2 | I | L, // T
-    85: F | E | D1 | D2 | C | B, // U
-    86: F | E | M | J, // V (Use diagonals)
-    87: F | E | B | C | K | M, // W
-    88: H | J | K | M, // X
-    89: H | J | L, // Y
-    90: A1 | A2 | J | M | D1 | D2, // Z
-    // Symbols
-    33:
-        B |
-        C, // ! (Simulated with right side approx) -> Actually B|C is 1. Maybe just I|L and dot? No dot.
-    // Let's use B|C for !, or just middle vertical I|L? I|L looks like I.
-    // Use B|C|0 (off).
-    // Let's go with B and C.
-    63: A1 | A2 | B | G2 | L, // ?
-    36: A1 | A2 | F | G1 | G2 | C | D1 | D2 | I | L, // $ (S with vert line)
-    37: F | G1 | J | M | D1, // %
-    42: G1 | G2 | I | L | H | J | K | M, // * (All internal)
-    43: G1 | G2 | I | L, // +
-    45: G1 | G2, // -
     61: G1 | G2 | D1 | D2, // = (Bottom line?) Or maybe G and D? A and G?
     // Let's do G1|G2 for mid, and D1|D2 is too low.
     // Maybe separate?
@@ -114,5 +89,45 @@ class SegmentPatterns {
       ascii -= 32;
     }
     return _asciiMap[ascii] ?? 0;
+  }
+}
+
+class Segment7Patterns {
+  // 7-Segment Bit Definitions
+  //      A
+  //    F   B
+  //      G
+  //    E   C
+  //      D
+
+  static const int A = 1 << 0;
+  static const int B = 1 << 1;
+  static const int C = 1 << 2;
+  static const int D = 1 << 3;
+  static const int E = 1 << 4;
+  static const int F = 1 << 5;
+  static const int G = 1 << 6;
+
+  static const Map<int, int> _hexMap = {
+    0x0: A | B | C | D | E | F,
+    0x1: B | C,
+    0x2: A | B | G | E | D,
+    0x3: A | B | G | C | D,
+    0x4: F | G | B | C,
+    0x5: A | F | G | C | D,
+    0x6: A | F | E | D | C | G,
+    0x7: A | B | C,
+    0x8: A | B | C | D | E | F | G,
+    0x9: A | F | G | B | C | D,
+    0xA: A | F | B | G | E | C,
+    0xB: F | E | D | C | G,
+    0xC: A | F | E | D,
+    0xD: B | C | D | E | G,
+    0xE: A | F | G | E | D,
+    0xF: A | F | G | E,
+  };
+
+  static int getHexMask(int value) {
+    return _hexMap[value & 0xF] ?? 0;
   }
 }

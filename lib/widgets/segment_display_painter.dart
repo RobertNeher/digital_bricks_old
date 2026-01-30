@@ -1,30 +1,194 @@
 import 'package:flutter/material.dart';
 
 class SegmentDisplayPainter extends CustomPainter {
-  final int mask; // 16-bit mask
+  final int mask; // 16-bit mask (or 8-bit for 7-seg)
   final Color color;
+  final Color backgroundColor;
+  final Color bodyColor;
   final double strokeWidth;
+  final bool is7Segment;
 
   SegmentDisplayPainter({
     required this.mask,
     required this.color,
+    required this.backgroundColor,
+    required this.bodyColor,
     this.strokeWidth = 3.0,
+    this.is7Segment = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Draw background body
+    final paintBody = Paint()
+      ..color = bodyColor
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Offset.zero & size, paintBody);
+
+    if (is7Segment) {
+      _paint7Seg(canvas, size);
+    } else {
+      _paint16Seg(canvas, size);
+    }
+  }
+
+  void _paint7Seg(Canvas canvas, Size size) {
     final double w = size.width;
     final double h = size.height;
+
+    // Add Padding to create a bezel/border effect for the body color
+    final double paddingX = w * 0.1;
+    final double paddingY = h * 0.05;
+
+    final double effW = w - 2 * paddingX;
+    final double effH = h - 2 * paddingY;
+
+    // Config for 7-segment look based on effective size
+    final double thickness =
+        effW * 0.18; // Slightly thicker relative to smaller width
+    final double gap = 1.0;
+
+    final paintOn = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final paintOff = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+
+    void draw(int bit, Path path) {
+      bool isOn = (mask & (1 << bit)) != 0;
+      canvas.drawPath(path, isOn ? paintOn : paintOff);
+    }
+
+    // Use effW and effH for calculations, and offset by paddingX, paddingY
+
+    // Helper to create a horizontal hexagon
+    Path horizHex(double x, double y, double width, double thickness) {
+      // Shift by padding
+      double px = x + paddingX;
+      double py = y + paddingY;
+
+      double t = thickness;
+      double ht = t / 2;
+
+      Path p = Path();
+      p.moveTo(px + ht, py);
+      p.lineTo(px + width - ht, py);
+      p.lineTo(px + width, py + ht);
+      p.lineTo(px + width - ht, py + t);
+      p.lineTo(px + ht, py + t);
+      p.lineTo(px, py + ht);
+      p.close();
+      return p;
+    }
+
+    // Helper to create a vertical hexagon
+    Path vertHex(double x, double y, double height, double thickness) {
+      double px = x + paddingX;
+      double py = y + paddingY;
+
+      double t = thickness;
+      double ht = t / 2;
+
+      Path p = Path();
+      p.moveTo(px + ht, py);
+      p.lineTo(px + t, py + ht);
+      p.lineTo(px + t, py + height - ht);
+      p.lineTo(px + ht, py + height);
+      p.lineTo(px, py + height - ht);
+      p.lineTo(px, py + ht);
+      p.close();
+      return p;
+    }
+
+    // Logic uses effW, effH now
+    // A (Top)
+    draw(
+      0,
+      horizHex(thickness / 2 + gap, 0, effW - thickness - 2 * gap, thickness),
+    );
+
+    // B (Top Right)
+    draw(
+      1,
+      vertHex(
+        effW - thickness,
+        thickness / 2 + gap,
+        effH / 2 - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+
+    // C (Bot Right)
+    draw(
+      2,
+      vertHex(
+        effW - thickness,
+        effH / 2 + thickness / 2 + gap,
+        effH / 2 - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+
+    // D (Bot)
+    draw(
+      3,
+      horizHex(
+        thickness / 2 + gap,
+        effH - thickness,
+        effW - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+
+    // E (Bot Left)
+    draw(
+      4,
+      vertHex(
+        0,
+        effH / 2 + thickness / 2 + gap,
+        effH / 2 - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+
+    // F (Top Left)
+    draw(
+      5,
+      vertHex(
+        0,
+        thickness / 2 + gap,
+        effH / 2 - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+
+    // G (Middle)
+    draw(
+      6,
+      horizHex(
+        thickness / 2 + gap,
+        effH / 2 - thickness / 2,
+        effW - thickness - 2 * gap,
+        thickness,
+      ),
+    );
+  }
+
+  void _paint16Seg(Canvas canvas, Size size) {
+    // Add Padding
+    final double paddingX = size.width * 0.1;
+    final double paddingY = size.height * 0.05;
+
+    final double w = size.width - 2 * paddingX;
+    final double h = size.height - 2 * paddingY;
+
+    // Shift canvas to inside padding
+    canvas.save();
+    canvas.translate(paddingX, paddingY);
+
     final double gap = strokeWidth / 2;
-
-    // Basic coordinates
-    // Verticals: Left (0), Middle (w/2), Right (w)
-    // Horizontals: Top (0), Middle (h/2), Bottom (h)
-
-    // We need points for all 16 segments.
-    // A1, A2, B, C, D1, D2, E, F (Outer)
-    // G1, G2 (Middle Horiz)
-    // H, I, J, K, L, M (Inner)
 
     final paintOn = Paint()
       ..color = color
@@ -33,7 +197,7 @@ class SegmentDisplayPainter extends CustomPainter {
       ..strokeWidth = strokeWidth;
 
     final paintOff = Paint()
-      ..color = color.withAlpha(13)
+      ..color = backgroundColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = strokeWidth;
@@ -142,10 +306,16 @@ class SegmentDisplayPainter extends CustomPainter {
     drawSeg(14, pL);
     // 15: M (Bot Left Diag)
     drawSeg(15, pM);
+
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant SegmentDisplayPainter oldDelegate) {
-    return oldDelegate.mask != mask || oldDelegate.color != color;
+    return oldDelegate.mask != mask ||
+        oldDelegate.color != color ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.bodyColor != bodyColor ||
+        oldDelegate.is7Segment != is7Segment;
   }
 }

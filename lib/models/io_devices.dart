@@ -64,6 +64,8 @@ class Led extends LogicComponent {
 class SegmentDisplay extends LogicComponent {
   int segments; // 7 or 16
   int color;
+  int backgroundColor; // Unlit segments
+  int bodyColor; // Display box background
   double fontSize;
 
   SegmentDisplay({
@@ -71,6 +73,8 @@ class SegmentDisplay extends LogicComponent {
     required super.position,
     this.segments = 7,
     this.color = 0xFF4CAF50, // Green
+    this.backgroundColor = 0xFF152515, // Dark Greenish-Black default
+    this.bodyColor = 0xFF000000, // Black default
     this.fontSize = 80.0,
   }) : super(
          name: '$segments-Seg',
@@ -92,9 +96,13 @@ class SegmentDisplay extends LogicComponent {
   // Helper to get integer value from inputs
   int get inputValue {
     int val = 0;
+    // Reverse bit order:
+    // If we want Bottom (last index) to be Bit 0:
     for (int i = 0; i < inputs.length; i++) {
       if (inputs[i].value) {
-        val |= (1 << i);
+        // If i=0 (Top) -> Bit (length-1)
+        // If i=last -> Bit 0
+        val |= (1 << (inputs.length - 1 - i));
       }
     }
     return val;
@@ -112,6 +120,8 @@ class SegmentDisplay extends LogicComponent {
     final json = super.toJson();
     json['segments'] = segments;
     json['color'] = color;
+    json['backgroundColor'] = backgroundColor;
+    json['bodyColor'] = bodyColor;
     json['fontSize'] = fontSize;
     return json;
   }
