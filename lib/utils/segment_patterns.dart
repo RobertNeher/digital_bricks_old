@@ -108,36 +108,36 @@ class SegmentPatterns {
     0x5F: D1 | D2, // _
     0x60: H, // `
     0x61: D1 | D2 | E | L | G1, // a
-    0x62: F | E | D2 | E | L | G1, // a
+    0x62: F | E | D2 | E | L | G1, // b
     0x63: D2 | G1 | E, // c
     0x64: D1 | B | C | L | D1 | G2, // d
     0x65: E | G1 | D2 | M, // e
-    0x66: A1 | A2 | F | E | G1 | G2, // f
-    0x67: A1 | A2 | F | E | D1 | D2 | C | G2, // g
-    0x68: F | E | B | C | G1 | G2, // h
-    0x69: A1 | A2 | D1 | D2 | I | L, // i
-    0x6A: B | C | D1 | D2 | E, // j
-    0x6B: F | E | G1 | J | K, // k
-    0x6C: F | E | D1 | D2, // l
-    0x6D: F | E | B | C | H | J, // m
-    0x6E: F | E | B | C | H | K, // n
-    0x6F: A1 | A2 | B | C | D1 | D2 | E | F, // o
-    0x70: A1 | A2 | B | E | F | G1 | G2, // p
-    0x71: A1 | A2 | B | C | D1 | D2 | E | F | K, // q
-    0x72: A1 | A2 | B | E | F | G1 | G2 | K, // r
-    0x73: A1 | A2 | F | G1 | G2 | C | D1 | D2, // s
-    0x74: A1 | A2 | I | L, // t
-    0x75: B | C | D1 | D2 | E | F, // u
-    0x76: F | E | M | J, // v
-    0x77: F | E | B | C | M | K, // w
+    0x66: A2 | I | L | G1 | G2, // f
+    0x67: F | A1 | I | L | D2 | G1, // g
+    0x68: F | E | L | G1, // h
+    0x69: L, // i
+    0x6A: E | L | D2 | L | I, // j
+    0x6B: I | L | J | K, // k
+    0x6C: F | E, // l
+    0x6D: E | G1 | G2 | L | C, // m
+    0x6E: E | G1 | L, // n
+    0x6F: G1 | L | D2 | E, // o
+    0x70: A1 | I | F | G1 | E, // p
+    0x71: A1 | I | F | G1 | L, // q
+    0x72: E | G1, // r
+    0x73: A1 | F | G1 | L | D2, // s
+    0x74: F | E | D2 | G1, // t
+    0x75: E | D2 | L, // u
+    0x76: E | M, // v
+    0x77: E | M | K | C, // w
     0x78: H | J | K | M, // x
-    0x79: B | C | D1 | D2 | F | G1 | G2, // y
-    0x7A: A1 | A2 | J | M | D1 | D2, // z
-    0x7B: I | L | A2 | D1, // {
+    0x79: I | B | G2 | C | D1, // y
+    0x7A: G1 | M | D2, // z
+    0x7B: I | L | G1 | A2 | D1, // {
     0x7C: I | L, // |
-    0x7D: I | L | A1 | D2, // }
-    0x7E: A1 | A2 | I | L, // ~
-    0x7F: I | L, // DEL
+    0x7D: I | L | A1 | D2 | G2, // }
+    0x7E: G1 | G2 | M | J, // ~
+    0x7F: 0, // DEL
   };
 
   static int getMask(int ascii) {
