@@ -20,6 +20,7 @@ import 'utils/file_ops.dart';
 class CircuitProvider extends ChangeNotifier {
   List<LogicComponent> components = [];
   List<Connection> connections = [];
+  // ignore: unused_field
   Timer? _simulationTimer;
 
   // Simulation constants
@@ -377,14 +378,24 @@ class CircuitProvider extends ChangeNotifier {
       components.clear();
       connections.clear();
 
-      // Deserialize Components
-      for (var curr in jsonMap['components']) {
-        components.add(_deserializeComponent(curr));
-      }
+      try {
+        // Deserialize Components
+        for (var curr in jsonMap['components']) {
+          components.add(_deserializeComponent(curr));
+        }
 
-      // Deserialize Connections
-      for (var conn in jsonMap['connections']) {
-        connections.add(Connection.fromJson(conn));
+        // Deserialize Connections
+        for (var conn in jsonMap['connections']) {
+          connections.add(Connection.fromJson(conn));
+        }
+      } catch (e) {
+        debugPrint("Error loading circuit: $e");
+        components.clear();
+        connections.clear();
+        // Rethrow or handle? For now, we clear and maybe let the UI know if we could.
+        // Ideally we should use a ScafoldMessenger here but we are in a Provider.
+        // We can throw and catch in the UI if we change the signature, but for now safe fail is better than crash.
+        return;
       }
 
       notifyListeners();

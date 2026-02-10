@@ -421,16 +421,26 @@ class _CircuitBoardState extends State<CircuitBoard> {
       double snapX = (localPos.dx / gs).round() * gs;
       double snapY = (localPos.dy / gs).round() * gs;
 
-      if (data is ComponentType) {
-        Provider.of<CircuitProvider>(
-          context,
-          listen: false,
-        ).addComponentByType(data, Offset(snapX, snapY));
-      } else if (data is SavedCircuit) {
-        Provider.of<CircuitProvider>(
-          context,
-          listen: false,
-        ).instantiateCustomCircuit(data, Offset(snapX, snapY));
+      try {
+        if (data is ComponentType) {
+          Provider.of<CircuitProvider>(
+            context,
+            listen: false,
+          ).addComponentByType(data, Offset(snapX, snapY));
+        } else if (data is SavedCircuit) {
+          Provider.of<CircuitProvider>(
+            context,
+            listen: false,
+          ).instantiateCustomCircuit(data, Offset(snapX, snapY));
+        }
+      } catch (e, stack) {
+        debugPrint('Error dropping component: $e\n$stack');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error placing component: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

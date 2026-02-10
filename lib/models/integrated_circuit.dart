@@ -18,15 +18,25 @@ class IntegratedCircuit extends LogicComponent {
   final Map<String, String> inputMap = {};
   final Map<String, String> outputMap = {};
 
+  final int depth;
+  static const int maxDepth = 20;
+
   IntegratedCircuit({
     required String super.id,
     required super.position,
     required this.blueprint,
+    this.depth = 0,
   }) : super(name: blueprint.name, type: ComponentType.custom) {
     _initialize();
   }
 
   void _initialize() {
+    if (depth > maxDepth) {
+      throw Exception(
+        "Maximum recursion depth ($maxDepth) exceeded for blueprint '${blueprint.name}'",
+      );
+    }
+
     // 1. Deserialize Internal Components
     for (var compData in blueprint.components) {
       LogicComponent comp = _deserializeInternal(compData);
@@ -153,7 +163,12 @@ class IntegratedCircuit extends LogicComponent {
         return ff;
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
-        return IntegratedCircuit(id: compId, position: pos, blueprint: bp);
+        return IntegratedCircuit(
+          id: compId,
+          position: pos,
+          blueprint: bp,
+          depth: depth + 1,
+        );
       case ComponentType.circuitInput:
         var ci = CircuitInput(id: compId, position: pos);
         if (json.containsKey('label')) ci.label = json['label'];
