@@ -500,6 +500,12 @@ class CircuitProvider extends ChangeNotifier {
           (comp as CircuitOutput).label = json['label'];
         }
         break;
+      case ComponentType.button:
+        comp = ButtonComponent(id: id, position: pos);
+        if (json.containsKey('isPressed')) {
+          (comp as ButtonComponent).isPressed = json['isPressed'];
+        }
+        break;
     }
 
     return comp;
@@ -560,6 +566,9 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.circuitOutput:
         comp = CircuitOutput(id: id, position: pos);
+        break;
+      case ComponentType.button:
+        comp = ButtonComponent(id: id, position: pos);
         break;
     }
 

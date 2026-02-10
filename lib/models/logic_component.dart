@@ -20,6 +20,7 @@ enum ComponentType {
   circuitInput,
   circuitOutput,
   custom, // Integrated Circuit
+  button,
 }
 
 abstract class LogicComponent {

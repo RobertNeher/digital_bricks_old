@@ -293,6 +293,7 @@ class ComponentWidget extends StatelessWidget {
                                   ),
                                 ),
                               ),
+
                             // For IntegratedCircuit
                             if (component is IntegratedCircuit)
                               Center(
@@ -329,15 +330,59 @@ class ComponentWidget extends StatelessWidget {
                                                 .blueprint
                                                 .name,
                                             textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ),
                                     ],
+                                  ),
+                                ),
+                              ),
+                            // For ButtonComponent
+                            if (component is ButtonComponent)
+                              Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    (component as ButtonComponent).toggle();
+                                    Provider.of<CircuitProvider>(
+                                      context,
+                                      listen: false,
+                                    ).refresh();
+                                  },
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (component as ButtonComponent)
+                                              .isPressed
+                                          ? Colors.green
+                                          : Colors.grey[300],
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.black,
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 2,
+                                          offset:
+                                              (component as ButtonComponent)
+                                                  .isPressed
+                                              ? const Offset(0, 0)
+                                              : const Offset(2, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.touch_app,
+                                      size: 24,
+                                      color:
+                                          (component as ButtonComponent)
+                                              .isPressed
+                                          ? Colors.white
+                                          : Colors.black54,
+                                    ),
                                   ),
                                 ),
                               ),

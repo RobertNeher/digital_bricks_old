@@ -156,3 +156,35 @@ class ConstantSource extends LogicComponent {
     return json;
   }
 }
+
+class ButtonComponent extends LogicComponent {
+  bool isPressed;
+
+  ButtonComponent({super.id, required super.position, this.isPressed = false})
+    : super(name: 'BTN', type: ComponentType.button) {
+    addOutputPin();
+    outputs[0].value = isPressed;
+  }
+
+  @override
+  void evaluate() {
+    // Passive, state changes via user interaction
+    if (outputs.isNotEmpty) {
+      outputs[0].value = isPressed;
+    }
+  }
+
+  void toggle() {
+    isPressed = !isPressed;
+    if (outputs.isNotEmpty) {
+      outputs[0].value = isPressed;
+    }
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final json = super.toJson();
+    json['isPressed'] = isPressed;
+    return json;
+  }
+}

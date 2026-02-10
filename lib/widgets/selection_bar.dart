@@ -35,6 +35,7 @@ class SelectionBar extends StatelessWidget {
             ComponentType.led,
             ComponentType.segment7,
             ComponentType.segment16,
+            ComponentType.button,
           ]),
           Consumer<CircuitProvider>(
             builder: (context, provider, child) {

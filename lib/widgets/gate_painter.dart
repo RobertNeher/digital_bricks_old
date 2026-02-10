@@ -68,6 +68,10 @@ class GatePainter extends CustomPainter {
       case ComponentType.circuitOutput:
         _drawTerminal(canvas, size, Colors.red[200]!);
         break;
+      case ComponentType.button:
+        _drawBox(path, size);
+        _drawButtonSymbol(canvas, size);
+        break;
       case ComponentType.custom:
         // Handled by ComponentWidget specifically with a Container
         // We leave path empty or maybe draw a box border here?
@@ -288,6 +292,15 @@ class GatePainter extends CustomPainter {
     p.lineTo(w * 0.8, h * 0.7);
     p.lineTo(w * 0.8, h * 0.3);
     canvas.drawPath(p, paint);
+  }
+
+  void _drawButtonSymbol(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+
+    // Draw a circle in the center
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 8, paint);
   }
 
   @override

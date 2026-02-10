@@ -177,6 +177,12 @@ class IntegratedCircuit extends LogicComponent {
         var co = CircuitOutput(id: compId, position: pos);
         if (json.containsKey('label')) co.label = json['label'];
         return co;
+      case ComponentType.button:
+        var btn = ButtonComponent(id: compId, position: pos);
+        if (json.containsKey('isPressed')) {
+          btn.isPressed = json['isPressed'];
+        }
+        return btn;
     }
   }
 
