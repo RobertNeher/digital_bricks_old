@@ -364,6 +364,9 @@ class _CircuitBoardState extends State<CircuitBoard> {
       double pinH = c.inputs.length * 20.0;
       height = fontH > pinH ? fontH : pinH;
       width = fontH * 0.8;
+    } else if (c is ButtonComponent) {
+      width = 40.0;
+      height = 40.0;
     }
 
     if (c is IntegratedCircuit) {
