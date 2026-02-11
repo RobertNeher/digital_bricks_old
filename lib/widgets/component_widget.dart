@@ -174,6 +174,7 @@ class ComponentWidget extends StatelessWidget {
                   builder: (context, provider, child) {
                     bool isSelected = provider.isSelected(component.id);
                     return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
                         // Toggle selection
                         Provider.of<CircuitProvider>(

@@ -111,17 +111,17 @@ class GatePainter extends CustomPainter {
 
     final textPaint = TextPainter(textDirection: TextDirection.ltr);
 
-    // D label
+    // D label (Pin 0, ~20%)
     textPaint.text = const TextSpan(
       text: 'D',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.25 - 5));
+    textPaint.paint(canvas, Offset(2, size.height * 0.2 - 5));
 
-    // Clock Triangle
+    // Clock Triangle (Pin 1, ~40%)
     Path tri = Path();
-    double clkY = size.height * 0.75;
+    double clkY = size.height * 0.4;
     tri.moveTo(0, clkY - 5);
     tri.lineTo(8, clkY);
     tri.lineTo(0, clkY + 5);
@@ -131,6 +131,22 @@ class GatePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
+
+    // PRE label (Pin 2, ~60%)
+    textPaint.text = const TextSpan(
+      text: 'PRE',
+      style: TextStyle(color: Colors.black, fontSize: 9),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.6 - 5));
+
+    // CLR label (Pin 3, ~80%)
+    textPaint.text = const TextSpan(
+      text: 'CLR',
+      style: TextStyle(color: Colors.black, fontSize: 9),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.8 - 5));
 
     // Q label
     textPaint.text = const TextSpan(

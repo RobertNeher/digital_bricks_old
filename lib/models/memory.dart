@@ -6,9 +6,11 @@ class DFlipFlop extends LogicComponent {
 
   DFlipFlop({super.id, required super.position})
     : super(name: 'D-FF', type: ComponentType.dFlipFlop) {
-    // Inputs: 0: D, 1: Clock
+    // Inputs: 0: D, 1: Clock, 2: Preset, 3: Clear
     addInputPin(); // D
     addInputPin(); // Clock
+    addInputPin(); // Preset
+    addInputPin(); // Clear
 
     // Outputs: 0: Q, 1: Q_not
     addOutputPin(); // Q
@@ -21,17 +23,28 @@ class DFlipFlop extends LogicComponent {
 
   @override
   void evaluate() {
-    if (inputs.length < 2) return;
+    if (inputs.length < 4) return;
 
     bool d = inputs[0].value;
     bool clk = inputs[1].value;
+    bool pre = inputs[2].value;
+    bool clr = inputs[3].value;
 
-    // Rising edge detection: Low -> High
-    if (clk != _lastClock && clk) {
-      _storedValue = d;
-      outputs[0].value = _storedValue;
-      outputs[1].value = !_storedValue;
+    // Asynchronous Logic (Highest Priority)
+    if (clr) {
+      _storedValue = false;
+    } else if (pre) {
+      _storedValue = true;
+    } else {
+      // Synchronous Logic (Rising Edge)
+      if (clk != _lastClock && clk) {
+        _storedValue = d;
+      }
     }
+
+    // Update Outputs
+    outputs[0].value = _storedValue;
+    outputs[1].value = !_storedValue;
 
     _lastClock = clk;
   }

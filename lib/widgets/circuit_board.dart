@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../circuit_provider.dart';
 import '../models/logic_component.dart'; // Needed for type
-import '../models/connection.dart';
-import '../models/io_devices.dart'; // For SegmentDisplay check
 import '../models/saved_circuit.dart';
-import '../models/integrated_circuit.dart';
 import 'component_widget.dart';
 import 'wire_painter.dart';
 import 'grid_painter.dart';
@@ -123,11 +120,24 @@ class _CircuitBoardState extends State<CircuitBoard> {
             children: [
               // Infinite Grid Layer (Background)
               Positioned.fill(
-                child: CustomPaint(
-                  painter: GridPainter(
-                    gridSize: CircuitProvider.gridSize,
-                    listenable: _transformController,
-                    backgroundColor: Colors.grey[200]!,
+                child: GestureDetector(
+                  behavior:
+                      HitTestBehavior.translucent, // Allow grid to catch events
+                  onSecondaryTap: () {
+                    debugPrint("Grid Background onSecondaryTap");
+                  },
+                  onSecondaryTapDown: (d) {
+                    debugPrint("Grid Background onSecondaryTapDown");
+                  },
+                  onSecondaryTapUp: (d) {
+                    debugPrint("Grid Background onSecondaryTapUp");
+                  },
+                  child: CustomPaint(
+                    painter: GridPainter(
+                      gridSize: CircuitProvider.gridSize,
+                      listenable: _transformController,
+                      backgroundColor: Colors.grey[200]!,
+                    ),
                   ),
                 ),
               ),
@@ -141,12 +151,20 @@ class _CircuitBoardState extends State<CircuitBoard> {
                 constrained: false,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
+                  onSecondaryTapDown: (details) {
+                    // Catch secondary tap down to prevent context menu
+                  },
                   onSecondaryTapUp: (details) {
+                    debugPrint("CircuitBoard onSecondaryTapUp");
+                    // Context menu disabled per user request.
+                    // This creates a cleaner experience but disables right-click wire deletion.
+                    /*
                     _handleSecondaryTap(
                       context,
                       details.localPosition,
                       provider,
                     );
+                    */
                   },
                   onTap: () {
                     provider.clearSelection();
@@ -253,6 +271,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
     );
   }
 
+  /*
   void _handleSecondaryTap(
     BuildContext context,
     Offset localPos,
@@ -311,7 +330,9 @@ class _CircuitBoardState extends State<CircuitBoard> {
 
     return p0 * uuu + p1 * (3 * uu * t) + p2 * (3 * u * tt) + p3 * ttt;
   }
+  */
 
+  /*
   void _showWireContextMenu(BuildContext context, String connectionId) {
     // Get position for menu? showModalBottomSheet is easier
     showModalBottomSheet(
@@ -409,6 +430,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
 
     return Offset(x, y);
   }
+  */
 
   void _handleDrop(BuildContext context, dynamic data, Offset dropPos) {
     // dropPos is in global screen coordinates.
