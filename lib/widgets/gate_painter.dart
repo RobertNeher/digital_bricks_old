@@ -62,6 +62,10 @@ class GatePainter extends CustomPainter {
         _drawBox(path, size);
         _drawRSFFSymbols(canvas, size);
         break;
+      case ComponentType.jkFlipFlop:
+        _drawBox(path, size);
+        _drawJKFFSymbols(canvas, size);
+        break;
       case ComponentType.circuitInput:
         _drawTerminal(canvas, size, Colors.green[200]!);
         break;
@@ -317,6 +321,81 @@ class GatePainter extends CustomPainter {
 
     // Draw a circle in the center
     canvas.drawCircle(Offset(size.width / 2, size.height / 2), 8, paint);
+  }
+
+  void _drawJKFFSymbols(Canvas canvas, Size size) {
+    // Inputs: 0:J, 1:K, 2:Clk, 3:Pre, 4:Clr
+    // Standard spacing for 5 inputs means they are at 1/6, 2/6, 3/6, 4/6, 5/6
+    // Or wire painter uses different logic?
+    // Let's assume standard distribution for now.
+    // 0: ~16%, 1: ~33%, 2: ~50%, 3: ~66%, 4: ~83%
+
+    final textPaint = TextPainter(textDirection: TextDirection.ltr);
+
+    // J label (Pin 0)
+    textPaint.text = const TextSpan(
+      text: 'J',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.17 - 5));
+
+    // K label (Pin 1)
+    textPaint.text = const TextSpan(
+      text: 'K',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.33 - 5));
+
+    // Clock Triangle (Pin 2)
+    Path tri = Path();
+    double clkY = size.height * 0.5;
+    tri.moveTo(0, clkY - 5);
+    tri.lineTo(8, clkY);
+    tri.lineTo(0, clkY + 5);
+    canvas.drawPath(
+      tri,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    // PRE label (Pin 3)
+    textPaint.text = const TextSpan(
+      text: 'PRE',
+      style: TextStyle(color: Colors.black, fontSize: 8),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.67 - 5));
+
+    // CLR label (Pin 4)
+    textPaint.text = const TextSpan(
+      text: 'CLR',
+      style: TextStyle(color: Colors.black, fontSize: 8),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(2, size.height * 0.83 - 5));
+
+    // Q label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(color: Colors.black, fontSize: 10),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+
+    // Q_not label
+    textPaint.text = const TextSpan(
+      text: 'Q',
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 10,
+        decoration: TextDecoration.overline,
+      ),
+    );
+    textPaint.layout();
+    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
   }
 
   @override

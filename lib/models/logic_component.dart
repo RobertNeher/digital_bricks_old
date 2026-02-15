@@ -21,6 +21,7 @@ enum ComponentType {
   circuitOutput,
   custom, // Integrated Circuit
   button,
+  jkFlipFlop,
 }
 
 abstract class LogicComponent {

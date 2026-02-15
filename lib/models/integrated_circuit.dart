@@ -161,6 +161,12 @@ class IntegratedCircuit extends LogicComponent {
           ff.setStoredValue(json['storedValue']);
         }
         return ff;
+      case ComponentType.jkFlipFlop:
+        var ff = JKFlipFlop(id: compId, position: pos);
+        if (json.containsKey('storedValue')) {
+          ff.setStoredValue(json['storedValue']);
+        }
+        return ff;
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
         return IntegratedCircuit(

@@ -131,3 +131,79 @@ class RsFlipFlop extends LogicComponent {
     outputs[1].value = !val;
   }
 }
+
+class JKFlipFlop extends LogicComponent {
+  bool _storedValue = false;
+  bool _lastClock = false;
+
+  JKFlipFlop({super.id, required super.position})
+    : super(name: 'JK-FF', type: ComponentType.jkFlipFlop) {
+    // Inputs: 0: J, 1: K, 2: Clock, 3: Preset, 4: Clear
+    addInputPin(); // J
+    addInputPin(); // K
+    addInputPin(); // Clock
+    addInputPin(); // Preset
+    addInputPin(); // Clear
+
+    // Outputs: 0: Q, 1: Q_not
+    addOutputPin(); // Q
+    addOutputPin(); // Q_not
+
+    // Initial state
+    outputs[0].value = false;
+    outputs[1].value = true;
+  }
+
+  @override
+  void evaluate() {
+    if (inputs.length < 5) return;
+
+    bool j = inputs[0].value;
+    bool k = inputs[1].value;
+    bool clk = inputs[2].value;
+    bool pre = inputs[3].value;
+    bool clr = inputs[4].value;
+
+    // Asynchronous Logic (Highest Priority)
+    if (clr) {
+      _storedValue = false;
+    } else if (pre) {
+      _storedValue = true;
+    } else {
+      // Synchronous Logic (Rising Edge)
+      if (clk != _lastClock && clk) {
+        if (!j && !k) {
+          // No Change
+        } else if (j && !k) {
+          // Set
+          _storedValue = true;
+        } else if (!j && k) {
+          // Reset
+          _storedValue = false;
+        } else if (j && k) {
+          // Toggle
+          _storedValue = !_storedValue;
+        }
+      }
+    }
+
+    // Update Outputs
+    outputs[0].value = _storedValue;
+    outputs[1].value = !_storedValue;
+
+    _lastClock = clk;
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final json = super.toJson();
+    json['storedValue'] = _storedValue;
+    return json;
+  }
+
+  void setStoredValue(bool val) {
+    _storedValue = val;
+    outputs[0].value = val;
+    outputs[1].value = !val;
+  }
+}
