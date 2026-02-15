@@ -199,6 +199,7 @@ class SelectionBar extends StatelessWidget {
   }
 
   Widget _buildDraggable(ComponentType type) {
+    String label = _getComponentLabel(type);
     return Draggable<ComponentType>(
       data: type,
       feedback: Material(
@@ -209,18 +210,39 @@ class SelectionBar extends StatelessWidget {
             border: Border.all(color: Colors.blue),
             color: Colors.white.withAlpha(80),
           ),
-          child: Text(type.name.toUpperCase()),
+          child: Text(label),
         ),
       ),
-      child: ListTile(
-        visualDensity: VisualDensity.compact,
-        contentPadding: const EdgeInsets.only(left: 16),
-        title: Text(
-          type.name.toUpperCase(),
-          style: const TextStyle(fontSize: 11),
+      child: Tooltip(
+        message: type.name.toUpperCase(),
+        child: ListTile(
+          visualDensity: VisualDensity.compact,
+          contentPadding: const EdgeInsets.only(left: 16),
+          title: Text(label, style: const TextStyle(fontSize: 11)),
+          leading: const Icon(Icons.drag_indicator, size: 16),
         ),
-        leading: const Icon(Icons.drag_indicator, size: 16),
       ),
     );
+  }
+
+  String _getComponentLabel(ComponentType type) {
+    switch (type) {
+      case ComponentType.and:
+        return "&";
+      case ComponentType.nand:
+        return "& ▷";
+      case ComponentType.or:
+        return "≥1";
+      case ComponentType.nor:
+        return "≥1 ▷";
+      case ComponentType.xor:
+        return "=1";
+      case ComponentType.nxor:
+        return "=1 ▷";
+      case ComponentType.inverter:
+        return "1 ▷";
+      default:
+        return type.name.toUpperCase();
+    }
   }
 }
