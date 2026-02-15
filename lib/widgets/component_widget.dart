@@ -58,6 +58,8 @@ class ComponentWidget extends StatelessWidget {
       double gapW = 20.0;
 
       width = inputW + gapW + bodyW;
+    } else if (component is ButtonComponent) {
+      width = 40.0;
     }
 
     if (component is IntegratedCircuit) {
@@ -260,27 +262,42 @@ class ComponentWidget extends StatelessWidget {
                                 ),
                               ),
                             // For label
-                            Center(
-                              child: Text(
-                                (component is CircuitInput)
-                                    ? (component as CircuitInput).label
-                                    : (component is CircuitOutput)
-                                    ? (component as CircuitOutput).label
-                                    : component.name,
-                                style: TextStyle(
-                                  fontSize:
-                                      (component is CircuitInput ||
-                                          component is CircuitOutput)
-                                      ? 12
-                                      : 10,
-                                  fontWeight:
-                                      (component is CircuitInput ||
-                                          component is CircuitOutput)
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                            if (component is ButtonComponent)
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Text(
+                                  (component as ButtonComponent).label,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                            else
+                              Center(
+                                child: Text(
+                                  (component is CircuitInput)
+                                      ? (component as CircuitInput).label
+                                      : (component is CircuitOutput)
+                                      ? (component as CircuitOutput).label
+                                      : component.name,
+                                  style: TextStyle(
+                                    fontSize:
+                                        (component is CircuitInput ||
+                                            component is CircuitOutput)
+                                        ? 12
+                                        : 10,
+                                    fontWeight:
+                                        (component is CircuitInput ||
+                                            component is CircuitOutput)
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                                 ),
                               ),
-                            ),
                             // For ConstantSource
                             if (component is ConstantSource)
                               Center(
@@ -607,7 +624,9 @@ class ComponentWidget extends StatelessWidget {
                   Navigator.pop(ctx);
                 },
               ),
-            if (component is CircuitInput || component is CircuitOutput)
+            if (component is CircuitInput ||
+                component is CircuitOutput ||
+                component is ButtonComponent)
               ListTile(
                 leading: const Icon(Icons.label),
                 title: const Text('Edit Label'),
@@ -784,6 +803,7 @@ class ComponentWidget extends StatelessWidget {
     String currentLabel = "";
     if (comp is CircuitInput) currentLabel = comp.label;
     if (comp is CircuitOutput) currentLabel = comp.label;
+    if (comp is ButtonComponent) currentLabel = comp.label;
 
     TextEditingController controller = TextEditingController(
       text: currentLabel,
@@ -801,12 +821,17 @@ class ComponentWidget extends StatelessWidget {
           TextButton(
             onPressed: () {
               String newLabel = controller.text;
-              if (comp is CircuitInput) comp.label = newLabel;
-              if (comp is CircuitOutput) comp.label = newLabel;
+              if (comp is CircuitInput)
+                comp.label = newLabel;
+              else if (comp is CircuitOutput)
+                comp.label = newLabel;
+              else if (comp is ButtonComponent) {
+                comp.label = controller.text;
+              }
               Provider.of<CircuitProvider>(context, listen: false).refresh();
               Navigator.pop(ctx);
             },
-            child: const Text("Save"),
+            child: const Text("OK"),
           ),
         ],
       ),

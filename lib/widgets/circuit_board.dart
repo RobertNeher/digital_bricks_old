@@ -366,7 +366,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
       width = fontH * 0.8;
     } else if (c is ButtonComponent) {
       width = 40.0;
-      height = 40.0;
+      // height defaults to 60.0, which matches ComponentWidget
     }
 
     if (c is IntegratedCircuit) {

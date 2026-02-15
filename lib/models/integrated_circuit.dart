@@ -182,6 +182,9 @@ class IntegratedCircuit extends LogicComponent {
         if (json.containsKey('isPressed')) {
           btn.isPressed = json['isPressed'];
         }
+        if (json.containsKey('label')) {
+          btn.label = json['label'];
+        }
         return btn;
     }
   }

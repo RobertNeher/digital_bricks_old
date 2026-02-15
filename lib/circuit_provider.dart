@@ -505,6 +505,9 @@ class CircuitProvider extends ChangeNotifier {
         if (json.containsKey('isPressed')) {
           (comp as ButtonComponent).isPressed = json['isPressed'];
         }
+        if (json.containsKey('label')) {
+          (comp as ButtonComponent).label = json['label'];
+        }
         break;
     }
 
