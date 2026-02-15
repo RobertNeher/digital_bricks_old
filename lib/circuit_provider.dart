@@ -1098,24 +1098,88 @@ class CircuitProvider extends ChangeNotifier {
       return sourceIn && targetIn;
     }).toList();
 
-    // 3. Identify Ports (Scanning anew allows interface changes)
+    // 3. Identify Ports & Labels
     List<String> inputPorts = [];
-    for (var c in groupComps) {
-      for (var p in c.inputs) {
-        bool isTarget = internalConnections.any(
-          (conn) => conn.targetPinId == p.id,
-        );
-        if (!isTarget) inputPorts.add(p.id);
-      }
-    }
-
     List<String> outputPorts = [];
-    for (var c in groupComps) {
-      for (var p in c.outputs) {
-        bool isSource = internalConnections.any(
-          (conn) => conn.sourcePinId == p.id,
-        );
-        if (!isSource) outputPorts.add(p.id);
+    List<String> inputLabels = [];
+    List<String> outputLabels = [];
+
+    // Check for explicit IO components
+    List<CircuitInput> explicitInputs = groupComps
+        .whereType<CircuitInput>()
+        .toList();
+    List<CircuitOutput> explicitOutputs = groupComps
+        .whereType<CircuitOutput>()
+        .toList();
+
+    debugPrint(
+      "Repacking ${blueprintName}: Found ${explicitInputs.length} inputs, ${explicitOutputs.length} outputs",
+    );
+
+    bool useExplicit = explicitInputs.isNotEmpty || explicitOutputs.isNotEmpty;
+
+    if (useExplicit) {
+      // Sort inputs: Top-to-Bottom, then Left-to-Right
+      explicitInputs.sort((a, b) {
+        if ((a.position.dy - b.position.dy).abs() > 10) {
+          return a.position.dy.compareTo(b.position.dy);
+        }
+        return a.position.dx.compareTo(b.position.dx);
+      });
+
+      // Sort outputs: Top-to-Bottom, then Left-to-Right
+      explicitOutputs.sort((a, b) {
+        if ((a.position.dy - b.position.dy).abs() > 10) {
+          return a.position.dy.compareTo(b.position.dy);
+        }
+        return a.position.dx.compareTo(b.position.dx);
+      });
+
+      for (var inp in explicitInputs) {
+        if (inp.outputs.isNotEmpty) {
+          inputPorts.add(inp.outputs[0].id);
+        }
+        if (inp.label.isNotEmpty) {
+          inputLabels.add(inp.label);
+        } else {
+          inputLabels.add("In ${inputPorts.length}");
+        }
+      }
+
+      for (var out in explicitOutputs) {
+        if (out.inputs.isNotEmpty) {
+          outputPorts.add(out.inputs[0].id);
+        }
+        if (out.label.isNotEmpty) {
+          outputLabels.add(out.label);
+        } else {
+          outputLabels.add("Out ${outputPorts.length}");
+        }
+      }
+    } else {
+      // Fallback to implicit ports (scanning unconnected pins)
+      for (var c in groupComps) {
+        for (var p in c.inputs) {
+          bool isTarget = internalConnections.any(
+            (conn) => conn.targetPinId == p.id,
+          );
+          if (!isTarget) {
+            inputPorts.add(p.id);
+            inputLabels.add("In ${inputPorts.length}");
+          }
+        }
+      }
+
+      for (var c in groupComps) {
+        for (var p in c.outputs) {
+          bool isSource = internalConnections.any(
+            (conn) => conn.sourcePinId == p.id,
+          );
+          if (!isSource) {
+            outputPorts.add(p.id);
+            outputLabels.add("Out ${outputPorts.length}");
+          }
+        }
       }
     }
 
@@ -1145,6 +1209,8 @@ class CircuitProvider extends ChangeNotifier {
       connections: connJson,
       inputPorts: inputPorts,
       outputPorts: outputPorts,
+      inputLabels: inputLabels,
+      outputLabels: outputLabels,
     );
 
     int existingIdx = customCircuits.indexWhere((c) => c.name == blueprintName);
