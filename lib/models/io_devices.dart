@@ -159,9 +159,14 @@ class ConstantSource extends LogicComponent {
 
 class ButtonComponent extends LogicComponent {
   bool isPressed;
+  String label;
 
-  ButtonComponent({super.id, required super.position, this.isPressed = false})
-    : super(name: 'BTN', type: ComponentType.button) {
+  ButtonComponent({
+    super.id,
+    required super.position,
+    this.isPressed = false,
+    this.label = "Label",
+  }) : super(name: 'BTN', type: ComponentType.button) {
     addOutputPin();
     outputs[0].value = isPressed;
   }
@@ -185,6 +190,7 @@ class ButtonComponent extends LogicComponent {
   Map<String, dynamic> toJson() {
     final json = super.toJson();
     json['isPressed'] = isPressed;
+    json['label'] = label;
     return json;
   }
 }

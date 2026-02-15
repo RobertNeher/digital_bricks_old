@@ -31,6 +31,13 @@ class ComponentWidget extends StatelessWidget {
       height = maxPins * 24.0;
       if (height < 60) height = 60;
     }
+    // Ensure button has enough height for label if we want to include it in the hit area,
+    // though we are drawing outside. But let's keep the hit area reasonable.
+    // If we want the label to be clickable as part of the component, we should increase height.
+    if (component is ButtonComponent) {
+      // 60 is enough for the button, label is drawn at bottom -15.
+      // If we don't clip, it should be visible.
+    }
     double width = 60.0;
     if (component is SegmentDisplay) {
       // Use parameterized size but ensure pins fit
@@ -90,6 +97,7 @@ class ComponentWidget extends StatelessWidget {
       height: height,
       // Color removed here, applied via Stack if needed
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           if (containerColor != null)
             Positioned(
@@ -234,6 +242,7 @@ class ComponentWidget extends StatelessWidget {
                               : null,
                         ),
                         child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
                             CustomPaint(
                               painter: GatePainter(type: component.type),
@@ -260,27 +269,28 @@ class ComponentWidget extends StatelessWidget {
                                 ),
                               ),
                             // For label
-                            Center(
-                              child: Text(
-                                (component is CircuitInput)
-                                    ? (component as CircuitInput).label
-                                    : (component is CircuitOutput)
-                                    ? (component as CircuitOutput).label
-                                    : component.name,
-                                style: TextStyle(
-                                  fontSize:
-                                      (component is CircuitInput ||
-                                          component is CircuitOutput)
-                                      ? 12
-                                      : 10,
-                                  fontWeight:
-                                      (component is CircuitInput ||
-                                          component is CircuitOutput)
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                            if (component is! ButtonComponent)
+                              Center(
+                                child: Text(
+                                  (component is CircuitInput)
+                                      ? (component as CircuitInput).label
+                                      : (component is CircuitOutput)
+                                      ? (component as CircuitOutput).label
+                                      : component.name,
+                                  style: TextStyle(
+                                    fontSize:
+                                        (component is CircuitInput ||
+                                            component is CircuitOutput)
+                                        ? 12
+                                        : 10,
+                                    fontWeight:
+                                        (component is CircuitInput ||
+                                            component is CircuitOutput)
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                                 ),
                               ),
-                            ),
                             // For ConstantSource
                             if (component is ConstantSource)
                               Center(
@@ -383,6 +393,22 @@ class ComponentWidget extends StatelessWidget {
                                               .isPressed
                                           ? Colors.white
                                           : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ), // Close Center
+                            // Button Label (Positioned below)
+                            if (component is ButtonComponent)
+                              Positioned(
+                                bottom: -15,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Text(
+                                    (component as ButtonComponent).label,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
@@ -607,7 +633,9 @@ class ComponentWidget extends StatelessWidget {
                   Navigator.pop(ctx);
                 },
               ),
-            if (component is CircuitInput || component is CircuitOutput)
+            if (component is CircuitInput ||
+                component is CircuitOutput ||
+                component is ButtonComponent)
               ListTile(
                 leading: const Icon(Icons.label),
                 title: const Text('Edit Label'),
@@ -784,6 +812,7 @@ class ComponentWidget extends StatelessWidget {
     String currentLabel = "";
     if (comp is CircuitInput) currentLabel = comp.label;
     if (comp is CircuitOutput) currentLabel = comp.label;
+    if (comp is ButtonComponent) currentLabel = comp.label;
 
     TextEditingController controller = TextEditingController(
       text: currentLabel,
@@ -800,13 +829,13 @@ class ComponentWidget extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              String newLabel = controller.text;
-              if (comp is CircuitInput) comp.label = newLabel;
-              if (comp is CircuitOutput) comp.label = newLabel;
+              if (comp is CircuitInput) comp.label = controller.text;
+              if (comp is CircuitOutput) comp.label = controller.text;
+              if (comp is ButtonComponent) comp.label = controller.text;
               Provider.of<CircuitProvider>(context, listen: false).refresh();
               Navigator.pop(ctx);
             },
-            child: const Text("Save"),
+            child: const Text("OK"),
           ),
         ],
       ),
