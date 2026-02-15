@@ -44,9 +44,11 @@ void main() {
       outputQ.icGroupId = groupId;
 
       // Also need to set icBlueprintName as per unpack logic
-      inputA.icBlueprintName = "TestBP";
-      gate.icBlueprintName = "TestBP";
-      outputQ.icBlueprintName = "TestBP";
+      // Use a DIFFERENT name to avoid "recursion" check if we repack into "TestBP"
+      // or we can just say they came from "OriginalIC"
+      inputA.icBlueprintName = "OriginalIC";
+      gate.icBlueprintName = "OriginalIC";
+      outputQ.icBlueprintName = "OriginalIC";
 
       // 5. Repack
       provider.repackIntegratedCircuit(groupId, "TestBP");

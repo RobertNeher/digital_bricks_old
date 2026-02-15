@@ -1106,15 +1106,13 @@ class CircuitProvider extends ChangeNotifier {
 
     // Check for explicit IO components
     List<CircuitInput> explicitInputs = groupComps
-        .whereType<CircuitInput>()
+        .where((c) => c.type == ComponentType.circuitInput)
+        .cast<CircuitInput>()
         .toList();
     List<CircuitOutput> explicitOutputs = groupComps
-        .whereType<CircuitOutput>()
+        .where((c) => c.type == ComponentType.circuitOutput)
+        .cast<CircuitOutput>()
         .toList();
-
-    debugPrint(
-      "Repacking ${blueprintName}: Found ${explicitInputs.length} inputs, ${explicitOutputs.length} outputs",
-    );
 
     bool useExplicit = explicitInputs.isNotEmpty || explicitOutputs.isNotEmpty;
 
