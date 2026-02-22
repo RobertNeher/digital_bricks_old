@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:digital_bricks/models/integrated_circuit.dart';
 import 'package:digital_bricks/models/saved_circuit.dart';
-import 'package:flutter/material.dart';
 
 void main() {
   test('IntegratedCircuit detects infinite recursion', () {
@@ -31,6 +30,7 @@ void main() {
       // 'blueprint': ... // We will fill this in
     };
 
+    // ignore: unused_local_variable
     final savedCircuit = SavedCircuit(
       name: 'RecursiveBP',
       components: [

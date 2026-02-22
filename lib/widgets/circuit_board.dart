@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../circuit_provider.dart';
@@ -67,7 +68,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
 
     return FocusableActionDetector(
       focusNode: _focusNode,
-      autofocus: true,
+      autofocus: false,
       shortcuts: <ShortcutActivator, Intent>{
         const SingleActivator(LogicalKeyboardKey.delete): const DeleteIntent(),
         const SingleActivator(LogicalKeyboardKey.backspace):
@@ -94,24 +95,12 @@ class _CircuitBoardState extends State<CircuitBoard> {
         ),
       },
       actions: <Type, Action<Intent>>{
-        DeleteIntent: CallbackAction<DeleteIntent>(
-          onInvoke: (intent) => provider.deleteSelectedComponents(),
-        ),
-        SelectAllIntent: CallbackAction<SelectAllIntent>(
-          onInvoke: (intent) => provider.selectAll(),
-        ),
-        SaveIntent: CallbackAction<SaveIntent>(
-          onInvoke: (intent) => provider.saveCurrentCircuit(),
-        ),
-        OpenIntent: CallbackAction<OpenIntent>(
-          onInvoke: (intent) => provider.loadCircuit(),
-        ),
-        CancelSelectionIntent: CallbackAction<CancelSelectionIntent>(
-          onInvoke: (intent) => provider.clearSelection(),
-        ),
-        MoveIntent: CallbackAction<MoveIntent>(
-          onInvoke: (intent) => provider.moveSelectedComponents(intent.delta),
-        ),
+        DeleteIntent: DeleteComponentAction(provider),
+        SelectAllIntent: SelectAllAction(provider),
+        SaveIntent: SaveCircuitAction(provider),
+        OpenIntent: OpenCircuitAction(provider),
+        CancelSelectionIntent: CancelSelectionAction(provider),
+        MoveIntent: MoveComponentAction(provider),
       },
       child: DragTarget<Object>(
         onAcceptWithDetails: (details) {
@@ -478,5 +467,91 @@ class _CircuitBoardState extends State<CircuitBoard> {
         ],
       ),
     );
+  }
+}
+
+abstract class CircuitAction<T extends Intent> extends Action<T> {
+  @override
+  bool isEnabled(Object? intent) {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null) return true;
+
+    // Check if the current focus belongs to an EditableText (direct or via label)
+    final context = focus.context;
+    if (context != null && (context.widget is EditableText)) {
+      return false;
+    }
+
+    final debugLabel = focus.debugLabel;
+    if (debugLabel != null) {
+      if (debugLabel.contains('EditableText') ||
+          debugLabel.contains('TextField')) {
+        return false;
+      }
+    }
+
+    // Also check if focus target's render object is a RenderEditable
+    return focus.context?.findRenderObject() is! RenderEditable;
+  }
+}
+
+class DeleteComponentAction extends CircuitAction<DeleteIntent> {
+  final CircuitProvider provider;
+  DeleteComponentAction(this.provider);
+  @override
+  Object? invoke(DeleteIntent intent) {
+    provider.deleteSelectedComponents();
+    return null;
+  }
+}
+
+class SelectAllAction extends CircuitAction<SelectAllIntent> {
+  final CircuitProvider provider;
+  SelectAllAction(this.provider);
+  @override
+  Object? invoke(SelectAllIntent intent) {
+    provider.selectAll();
+    return null;
+  }
+}
+
+class SaveCircuitAction extends CircuitAction<SaveIntent> {
+  final CircuitProvider provider;
+  SaveCircuitAction(this.provider);
+  @override
+  Object? invoke(SaveIntent intent) {
+    provider.saveCurrentCircuit();
+    return null;
+  }
+}
+
+class OpenCircuitAction extends CircuitAction<OpenIntent> {
+  final CircuitProvider provider;
+  OpenCircuitAction(this.provider);
+  @override
+  Object? invoke(OpenIntent intent) {
+    provider.loadCircuit();
+    return null;
+  }
+}
+
+class CancelSelectionAction extends CircuitAction<CancelSelectionIntent> {
+  final CircuitProvider provider;
+  CancelSelectionAction(this.provider);
+  @override
+  Object? invoke(CancelSelectionIntent intent) {
+    provider.clearSelection();
+    return null;
+  }
+}
+
+class MoveComponentAction extends CircuitAction<MoveIntent> {
+  final CircuitProvider provider;
+  MoveComponentAction(this.provider);
+
+  @override
+  Object? invoke(MoveIntent intent) {
+    provider.moveSelectedComponents(intent.delta);
+    return null;
   }
 }

@@ -11,6 +11,9 @@ import 'ic_painter.dart';
 import 'color_picker_dialog.dart';
 import 'pin_widget.dart';
 import 'segment_display_painter.dart';
+import '../models/markdown_component.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 import '../utils/segment_patterns.dart';
 
 class ComponentWidget extends StatelessWidget {
@@ -85,6 +88,26 @@ class ComponentWidget extends StatelessWidget {
       // We want 'width + 20' to equal 'maxInW + 60 + maxOutW + 20 (for pins)'.
       // So 'width' should be 'maxInW + 60 + maxOutW'.
       width = 60.0 + maxInW + maxOutW;
+    }
+
+    if (component is MarkdownComponent) {
+      final text = (component as MarkdownComponent).text;
+      final textPainter = TextPainter(
+        text: TextSpan(text: text, style: const TextStyle(fontSize: 12)),
+        textDirection: TextDirection.ltr,
+      );
+      // We fix the width to a reasonable documentation size
+      width = 250.0;
+      textPainter.layout(maxWidth: width - 24); // Account for padding
+
+      // Heuristic: Markdown elements (tables, headers) take more space than plain text.
+      double multiplier = 1.8;
+      if (text.contains('|'))
+        multiplier = 4.0; // Tables are significantly taller
+      if (text.contains('#')) multiplier = 2.2; // Headers add spacing
+
+      height = (textPainter.height * multiplier) + 80.0;
+      if (height < 60) height = 60;
     }
 
     Color? containerColor;
@@ -235,6 +258,16 @@ class ComponentWidget extends StatelessWidget {
                       onSecondaryTap: () {
                         _showContextMenu(context);
                       },
+                      onDoubleTap: (component is MarkdownComponent)
+                          ? () {
+                              final mdComp = component as MarkdownComponent;
+                              mdComp.isEditing = true;
+                              Provider.of<CircuitProvider>(
+                                context,
+                                listen: false,
+                              ).refresh();
+                            }
+                          : null,
                       child: Container(
                         decoration: BoxDecoration(
                           border: isSelected
@@ -413,6 +446,15 @@ class ComponentWidget extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            if (component is MarkdownComponent)
+                              Positioned.fill(
+                                child: FocusScope(
+                                  child: _MarkdownEditorWidget(
+                                    key: ValueKey('md_editor_${component.id}'),
+                                    component: component as MarkdownComponent,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -420,6 +462,7 @@ class ComponentWidget extends StatelessWidget {
                   },
                 ),
               ),
+
               // Outputs
               Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -838,6 +881,88 @@ class ComponentWidget extends StatelessWidget {
             child: const Text("OK"),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MarkdownEditorWidget extends StatefulWidget {
+  final MarkdownComponent component;
+
+  const _MarkdownEditorWidget({super.key, required this.component});
+
+  @override
+  State<_MarkdownEditorWidget> createState() => _MarkdownEditorWidgetState();
+}
+
+class _MarkdownEditorWidgetState extends State<_MarkdownEditorWidget> {
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.component.text);
+    // Removed focus listener that was too aggressive
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.component.isEditing) {
+      return TapRegion(
+        onTapOutside: (event) {
+          setState(() {
+            widget.component.isEditing = false;
+            widget.component.text = _controller.text;
+            Provider.of<CircuitProvider>(context, listen: false).refresh();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          color: Colors.white,
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            maxLines: null,
+            expands: true,
+            autofocus: true,
+            onChanged: (val) {
+              widget.component.text = val;
+              Provider.of<CircuitProvider>(context, listen: false).refresh();
+            },
+            style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
+      child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: 250.0 - 16, // Use the component width minus padding
+            child: MarkdownBody(
+              data: widget.component.text,
+              shrinkWrap: true,
+              extensionSet: md.ExtensionSet.gitHubFlavored,
+            ),
+          ),
+        ),
       ),
     );
   }
