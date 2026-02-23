@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'logic_component.dart';
+import 'markdown_component.dart';
 import 'saved_circuit.dart';
 import 'connection.dart';
 import 'pin.dart';
@@ -189,6 +190,12 @@ class IntegratedCircuit extends LogicComponent {
           btn.isPressed = json['isPressed'];
         }
         return btn;
+      case ComponentType.markdownText:
+        return MarkdownComponent(
+          id: compId,
+          position: pos,
+          text: json['text'] ?? "",
+        );
     }
   }
 

@@ -14,6 +14,7 @@ class SelectionBar extends StatelessWidget {
       color: Colors.grey[200],
       child: ListView(
         children: [
+          _buildCategory("General", [ComponentType.markdownText]),
           _buildCategory("Basic Circuits", [
             ComponentType.and,
             ComponentType.nand,
@@ -240,6 +241,8 @@ class SelectionBar extends StatelessWidget {
         return "=1 ▷";
       case ComponentType.inverter:
         return "1 ▷";
+      case ComponentType.markdownText:
+        return "Text";
       default:
         return type.name.toUpperCase();
     }

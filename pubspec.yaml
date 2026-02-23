@@ -37,6 +37,7 @@ dependencies:
   provider:
   uuid:
   flex_color_picker:
+  flutter_markdown:
 
 flutter_launcher_icons:
   android: "launcher_icon"

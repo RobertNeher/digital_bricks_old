@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import 'models/logic_component.dart';
+import 'models/markdown_component.dart';
 import 'models/gates.dart';
 import 'models/io_devices.dart';
 import 'models/memory.dart';
@@ -515,6 +516,13 @@ class CircuitProvider extends ChangeNotifier {
           (comp as ButtonComponent).label = json['label'];
         }
         break;
+      case ComponentType.markdownText:
+        comp = MarkdownComponent(
+          id: id,
+          position: pos,
+          text: json['text'] ?? "",
+        );
+        break;
     }
 
     return comp;
@@ -581,6 +589,9 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.button:
         comp = ButtonComponent(id: id, position: pos);
+        break;
+      case ComponentType.markdownText:
+        comp = MarkdownComponent(id: id, position: pos);
         break;
     }
 
