@@ -362,24 +362,38 @@ class CircuitProvider extends ChangeNotifier {
     debugPrint("saveCircuitToPath: write complete");
   }
 
-  Future<void> loadCircuit() async {
+  Future<Map<String, dynamic>?> pickAndReadCircuit() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result == null) return null;
 
-    if (result != null) {
-      PlatformFile pFile = result.files.single;
-      if (pFile.path != null) {
-        currentFilePath = pFile.path;
-      }
+    PlatformFile pFile = result.files.single;
+    if (pFile.path != null) {
+      currentFilePath = pFile.path;
+    }
 
-      String content = await FileOps.readFile(pFile);
-      if (content.isEmpty) return; // or handle error
+    String content = await FileOps.readFile(pFile);
+    if (content.isEmpty) return null;
 
-      Map<String, dynamic> jsonMap = jsonDecode(content);
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint("Error decoding circuit: $e");
+      return null;
+    }
+  }
 
+  void applyCircuitData(
+    Map<String, dynamic> jsonMap, {
+    bool clearCanvas = true,
+  }) {
+    if (clearCanvas) {
       components.clear();
       connections.clear();
+      selectedComponentIds.clear();
+    }
 
-      try {
+    try {
+      if (clearCanvas) {
         // Deserialize Components
         for (var curr in jsonMap['components']) {
           components.add(_deserializeComponent(curr));
@@ -389,17 +403,79 @@ class CircuitProvider extends ChangeNotifier {
         for (var conn in jsonMap['connections']) {
           connections.add(Connection.fromJson(conn));
         }
-      } catch (e) {
-        debugPrint("Error loading circuit: $e");
+      } else {
+        // Append with remapping
+        Map<String, String> idMap = {};
+        List<LogicComponent> newComponents = [];
+
+        // 1. Generate new IDs and Deserialize
+        for (var curr in jsonMap['components']) {
+          String oldId = curr['id'];
+          String newId = const Uuid().v4();
+          idMap[oldId] = newId;
+
+          // Clone and update ID/Position
+          Map<String, dynamic> cloned = Map<String, dynamic>.from(curr);
+          cloned['id'] = newId;
+          // Offset to avoid direct overlap
+          cloned['position_dx'] = (cloned['position_dx'] ?? 0.0) + 40.0;
+          cloned['position_dy'] = (cloned['position_dy'] ?? 0.0) + 40.0;
+
+          newComponents.add(_deserializeComponent(cloned));
+        }
+
+        // 2. Remap Connections
+        List<Connection> newConnections = [];
+        for (var connJson in jsonMap['connections']) {
+          String oldSourcePinId = connJson['sourcePinId'];
+          String oldTargetPinId = connJson['targetPinId'];
+
+          String? newSourcePinId = _remapPinIdHelper(oldSourcePinId, idMap);
+          String? newTargetPinId = _remapPinIdHelper(oldTargetPinId, idMap);
+
+          if (newSourcePinId != null && newTargetPinId != null) {
+            newConnections.add(
+              Connection(
+                id: const Uuid().v4(),
+                sourcePinId: newSourcePinId,
+                targetPinId: newTargetPinId,
+              ),
+            );
+          }
+        }
+
+        components.addAll(newComponents);
+        connections.addAll(newConnections);
+
+        // Select the newly added components
+        selectedComponentIds.clear();
+        selectedComponentIds.addAll(newComponents.map((c) => c.id));
+      }
+    } catch (e) {
+      debugPrint("Error applying circuit data: $e");
+      if (clearCanvas) {
         components.clear();
         connections.clear();
-        // Rethrow or handle? For now, we clear and maybe let the UI know if we could.
-        // Ideally we should use a ScafoldMessenger here but we are in a Provider.
-        // We can throw and catch in the UI if we change the signature, but for now safe fail is better than crash.
-        return;
       }
+    }
 
-      notifyListeners();
+    notifyListeners();
+  }
+
+  String? _remapPinIdHelper(String oldPinId, Map<String, String> idMap) {
+    for (var entry in idMap.entries) {
+      if (oldPinId.startsWith(entry.key)) {
+        String suffix = oldPinId.substring(entry.key.length);
+        return "${entry.value}$suffix";
+      }
+    }
+    return null;
+  }
+
+  Future<void> loadCircuit() async {
+    final data = await pickAndReadCircuit();
+    if (data != null) {
+      applyCircuitData(data, clearCanvas: true);
     }
   }
 

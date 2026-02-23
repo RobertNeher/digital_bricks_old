@@ -67,10 +67,51 @@ class MainScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.folder_open),
-            onPressed: () => Provider.of<CircuitProvider>(
-              context,
-              listen: false,
-            ).loadCircuit(),
+            onPressed: () async {
+              final provider = Provider.of<CircuitProvider>(
+                context,
+                listen: false,
+              );
+
+              final data = await provider.pickAndReadCircuit();
+              if (data == null || !context.mounted) return;
+
+              // If canvas is empty, just load directly
+              if (provider.components.isEmpty) {
+                provider.applyCircuitData(data, clearCanvas: true);
+                return;
+              }
+
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text("Load Circuit"),
+                  content: const Text(
+                    "Do you want to clear the current canvas before loading, or append the circuit to the existing one?",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        provider.applyCircuitData(data, clearCanvas: true);
+                      },
+                      child: const Text("Clear Canvas"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        provider.applyCircuitData(data, clearCanvas: false);
+                      },
+                      child: const Text("Append"),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Cancel"),
+                    ),
+                  ],
+                ),
+              );
+            },
             tooltip: "Load Circuit",
           ),
           // Maybe a "Clear" button?
@@ -80,9 +121,9 @@ class MainScreen extends StatelessWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text("Clear Workspace"),
+                  title: const Text("Clear Canvas"),
                   content: const Text(
-                    "Are you sure you want to clear the entire circuit?\nUnsaved changes will be lost.",
+                    "Are you sure you want to clear the entire canvas?\nUnsaved changes will be lost.",
                   ),
                   actions: [
                     TextButton(
