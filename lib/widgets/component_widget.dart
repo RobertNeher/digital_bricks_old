@@ -206,55 +206,69 @@ class ComponentWidget extends StatelessWidget {
                     bool isSelected = provider.isSelected(component.id);
                     return GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        // Toggle selection
-                        Provider.of<CircuitProvider>(
-                          context,
-                          listen: false,
-                        ).toggleComponentSelection(component.id);
-                      },
-                      onPanUpdate: (details) {
-                        final provider = Provider.of<CircuitProvider>(
-                          context,
-                          listen: false,
-                        );
+                      onTap:
+                          (component is MarkdownComponent &&
+                              (component as MarkdownComponent).isEditing)
+                          ? null
+                          : () {
+                              // Toggle selection
+                              Provider.of<CircuitProvider>(
+                                context,
+                                listen: false,
+                              ).toggleComponentSelection(component.id);
+                            },
+                      onPanUpdate:
+                          (component is MarkdownComponent &&
+                              (component as MarkdownComponent).isEditing)
+                          ? null
+                          : (details) {
+                              final provider = Provider.of<CircuitProvider>(
+                                context,
+                                listen: false,
+                              );
 
-                        // If this component isn't selected, select it exclusively (drag logic usually)
-                        // Or if it IS selected, move ALL selected.
-                        if (!provider.isSelected(component.id)) {
-                          // If dragging something unselected, select just it (classic behavior)
-                          provider.selectComponent(component.id);
-                        }
+                              // If this component isn't selected, select it exclusively (drag logic usually)
+                              // Or if it IS selected, move ALL selected.
+                              if (!provider.isSelected(component.id)) {
+                                // If dragging something unselected, select just it (classic behavior)
+                                provider.selectComponent(component.id);
+                              }
 
-                        // Move all selected components
-                        for (var id in provider.selectedComponentIds) {
-                          var comp = provider.components.firstWhere(
-                            (c) => c.id == id,
-                          );
-                          comp.position += details.delta;
-                        }
+                              // Move all selected components
+                              for (var id in provider.selectedComponentIds) {
+                                var comp = provider.components.firstWhere(
+                                  (c) => c.id == id,
+                                );
+                                comp.position += details.delta;
+                              }
 
-                        provider.refresh();
-                      },
-                      onPanEnd: (details) {
-                        final provider = Provider.of<CircuitProvider>(
-                          context,
-                          listen: false,
-                        );
-                        double gs = CircuitProvider.gridSize;
+                              provider.refresh();
+                            },
+                      onPanEnd:
+                          (component is MarkdownComponent &&
+                              (component as MarkdownComponent).isEditing)
+                          ? null
+                          : (details) {
+                              final provider = Provider.of<CircuitProvider>(
+                                context,
+                                listen: false,
+                              );
+                              double gs = CircuitProvider.gridSize;
 
-                        // Snap ALL selected components
-                        for (var id in provider.selectedComponentIds) {
-                          var comp = provider.components.firstWhere(
-                            (c) => c.id == id,
-                          );
-                          double snapX = (comp.position.dx / gs).round() * gs;
-                          double snapY = (comp.position.dy / gs).round() * gs;
-                          comp.position = Offset(snapX, snapY);
-                        }
+                              // Snap ALL selected components
+                              for (var id in provider.selectedComponentIds) {
+                                var comp = provider.components.firstWhere(
+                                  (c) => c.id == id,
+                                );
+                                double snapX =
+                                    (comp.position.dx / gs).round() * gs;
+                                double snapY =
+                                    (comp.position.dy / gs).round() * gs;
+                                comp.position = Offset(snapX, snapY);
+                              }
 
-                        provider.refresh();
-                      },
+                              provider.refresh();
+                            },
                       onSecondaryTap: () {
                         _showContextMenu(context);
                       },
@@ -903,7 +917,12 @@ class _MarkdownEditorWidgetState extends State<_MarkdownEditorWidget> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.component.text);
-    // Removed focus listener that was too aggressive
+    // Request focus in next frame once textfield is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.component.isEditing) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -927,21 +946,27 @@ class _MarkdownEditorWidgetState extends State<_MarkdownEditorWidget> {
         child: Container(
           padding: const EdgeInsets.all(4),
           color: Colors.white,
-          child: TextField(
-            controller: _controller,
-            focusNode: _focusNode,
-            maxLines: null,
-            expands: true,
-            autofocus: true,
-            onChanged: (val) {
-              widget.component.text = val;
-              Provider.of<CircuitProvider>(context, listen: false).refresh();
+          child: GestureDetector(
+            onTap: () {
+              // Ensure focus on tap explicitly
+              _focusNode.requestFocus();
             },
-            style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              maxLines: null,
+              expands: true,
+              autofocus: true,
+              onChanged: (val) {
+                widget.component.text = val;
+                Provider.of<CircuitProvider>(context, listen: false).refresh();
+              },
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
         ),

@@ -476,22 +476,43 @@ abstract class CircuitAction<T extends Intent> extends Action<T> {
     final focus = FocusManager.instance.primaryFocus;
     if (focus == null) return true;
 
-    // Check if the current focus belongs to an EditableText (direct or via label)
+    // Check the focus tree context
     final context = focus.context;
-    if (context != null && (context.widget is EditableText)) {
-      return false;
-    }
+    if (context == null) return true;
 
+    // 1. Check if the focused widget is an EditableText or contains one
+    bool isFocusInText = false;
+    context.visitAncestorElements((element) {
+      if (element.widget is EditableText) {
+        isFocusInText = true;
+        return false;
+      }
+      return true;
+    });
+
+    if (isFocusInText) return false;
+
+    // 2. Check debug labels for common text field focus tags
     final debugLabel = focus.debugLabel;
     if (debugLabel != null) {
-      if (debugLabel.contains('EditableText') ||
-          debugLabel.contains('TextField')) {
+      final labelLower = debugLabel.toLowerCase();
+      if (labelLower.contains('editabletext') ||
+          labelLower.contains('textfield') ||
+          labelLower.contains('textinput')) {
         return false;
       }
     }
 
-    // Also check if focus target's render object is a RenderEditable
-    return focus.context?.findRenderObject() is! RenderEditable;
+    // 3. Check for RenderEditable in the focus target's subtree
+    bool hasRenderEditable = false;
+    final renderObject = context.findRenderObject();
+    if (renderObject is RenderEditable) {
+      hasRenderEditable = true;
+    } else if (renderObject is RenderBox) {
+      // Check if it's a descendant of something that might handle text
+    }
+
+    return !hasRenderEditable;
   }
 }
 
