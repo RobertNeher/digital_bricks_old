@@ -867,12 +867,14 @@ class ComponentWidget extends StatelessWidget {
 
   void _showLabelDialog(BuildContext context, LogicComponent comp) {
     String currentLabel = "";
+    bool forceUppercase = comp is CircuitInput || comp is CircuitOutput;
+
     if (comp is CircuitInput) currentLabel = comp.label;
     if (comp is CircuitOutput) currentLabel = comp.label;
     if (comp is ButtonComponent) currentLabel = comp.label;
 
     TextEditingController controller = TextEditingController(
-      text: currentLabel,
+      text: forceUppercase ? currentLabel.toUpperCase() : currentLabel,
     );
 
     showDialog(
@@ -881,14 +883,40 @@ class ComponentWidget extends StatelessWidget {
         title: const Text("Edit Label"),
         content: TextField(
           controller: controller,
+          autofocus: true,
           decoration: const InputDecoration(labelText: "Label"),
+          textCapitalization: forceUppercase
+              ? TextCapitalization.characters
+              : TextCapitalization.none,
+          onChanged: (value) {
+            if (forceUppercase) {
+              final upper = value.toUpperCase();
+              if (upper != value) {
+                controller.value = controller.value.copyWith(
+                  text: upper,
+                  selection: TextSelection.collapsed(offset: upper.length),
+                );
+              }
+            }
+          },
+          onSubmitted: (value) {
+            final finalLabel = forceUppercase ? value.toUpperCase() : value;
+            if (comp is CircuitInput) comp.label = finalLabel;
+            if (comp is CircuitOutput) comp.label = finalLabel;
+            if (comp is ButtonComponent) comp.label = finalLabel;
+            Provider.of<CircuitProvider>(context, listen: false).refresh();
+            Navigator.pop(ctx);
+          },
         ),
         actions: [
           TextButton(
             onPressed: () {
-              if (comp is CircuitInput) comp.label = controller.text;
-              if (comp is CircuitOutput) comp.label = controller.text;
-              if (comp is ButtonComponent) comp.label = controller.text;
+              final finalLabel = forceUppercase
+                  ? controller.text.toUpperCase()
+                  : controller.text;
+              if (comp is CircuitInput) comp.label = finalLabel;
+              if (comp is CircuitOutput) comp.label = finalLabel;
+              if (comp is ButtonComponent) comp.label = finalLabel;
               Provider.of<CircuitProvider>(context, listen: false).refresh();
               Navigator.pop(ctx);
             },
