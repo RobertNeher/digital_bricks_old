@@ -9,6 +9,13 @@ class ICPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Draw surrounding box
+    final borderPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), borderPaint);
+
     if (components.isEmpty) return;
 
     // 1. Calculate Bounding Box of internals

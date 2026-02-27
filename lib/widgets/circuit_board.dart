@@ -5,12 +5,11 @@ import 'package:provider/provider.dart';
 import '../circuit_provider.dart';
 import '../models/logic_component.dart'; // Needed for type
 import '../models/connection.dart';
-import '../models/io_devices.dart'; // For SegmentDisplay check
 import '../models/saved_circuit.dart';
-import '../models/integrated_circuit.dart';
 import 'component_widget.dart';
 import 'wire_painter.dart';
 import 'grid_painter.dart';
+import '../utils/component_layout.dart';
 
 class CircuitBoard extends StatefulWidget {
   const CircuitBoard({super.key});
@@ -63,8 +62,8 @@ class _CircuitBoardState extends State<CircuitBoard> {
     final provider = Provider.of<CircuitProvider>(context);
 
     // Canvas size
-    const double canvasWidth = 2000;
-    const double canvasHeight = 2000;
+    const double canvasWidth = 10000;
+    const double canvasHeight = 10000;
 
     return FocusableActionDetector(
       focusNode: _focusNode,
@@ -123,6 +122,7 @@ class _CircuitBoardState extends State<CircuitBoard> {
 
               // Interactive Workspace
               InteractiveViewer(
+                key: ValueKey(provider.circuitSessionId),
                 transformationController: _transformController,
                 boundaryMargin: const EdgeInsets.all(double.infinity),
                 minScale: 0.1,
@@ -150,10 +150,12 @@ class _CircuitBoardState extends State<CircuitBoard> {
                       children: [
                         // Wires (Bottom layer)
                         Positioned.fill(
-                          child: CustomPaint(
-                            painter: WirePainter(
-                              connections: provider.connections,
-                              components: provider.components,
+                          child: RepaintBoundary(
+                            child: CustomPaint(
+                              painter: WirePainter(
+                                connections: provider.connections,
+                                components: provider.components,
+                              ),
                             ),
                           ),
                         ),
@@ -161,9 +163,13 @@ class _CircuitBoardState extends State<CircuitBoard> {
                         // Components
                         ...provider.components.map((comp) {
                           return Positioned(
+                            key: ValueKey(comp.id),
                             left: comp.position.dx,
                             top: comp.position.dy,
-                            child: ComponentWidget(component: comp),
+                            child: ComponentWidget(
+                              key: ValueKey(comp.id),
+                              component: comp,
+                            ),
                           );
                         }),
                       ],
@@ -325,78 +331,20 @@ class _CircuitBoardState extends State<CircuitBoard> {
     );
   }
 
-  // Reusing logic from WirePainter (should refactor later)
   Offset? _getPinPos(String pinId, List<LogicComponent> components) {
     for (var c in components) {
       for (int i = 0; i < c.inputs.length; i++) {
-        if (c.inputs[i].id == pinId) return _calculatePinOffset(c, i, true);
+        if (c.inputs[i].id == pinId) {
+          return ComponentLayout.getPinPosition(c, i, true);
+        }
       }
       for (int i = 0; i < c.outputs.length; i++) {
-        if (c.outputs[i].id == pinId) return _calculatePinOffset(c, i, false);
+        if (c.outputs[i].id == pinId) {
+          return ComponentLayout.getPinPosition(c, i, false);
+        }
       }
     }
     return null;
-  }
-
-  Offset _calculatePinOffset(LogicComponent c, int index, bool isInput) {
-    // 1. Calculate Height correctly (matching ComponentWidget.build)
-    double height = 60.0;
-    int maxPins = c.inputs.length > c.outputs.length
-        ? c.inputs.length
-        : c.outputs.length;
-    if (maxPins > 3) {
-      height = maxPins * 20.0;
-    }
-    double width = 60.0;
-    if (c is SegmentDisplay) {
-      double fontH = c.fontSize;
-      double pinH = c.inputs.length * 20.0;
-      height = fontH > pinH ? fontH : pinH;
-      width = fontH * 0.8;
-    } else if (c is ButtonComponent) {
-      width = 40.0;
-      height = 40.0;
-    }
-
-    if (c is IntegratedCircuit) {
-      double maxInW = 0;
-      double maxOutW = 0;
-      const double charWidth = 8.0;
-
-      for (var l in c.blueprint.inputLabels) {
-        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
-      }
-      for (var l in c.blueprint.outputLabels) {
-        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
-      }
-      width = 60.0 + maxInW + maxOutW;
-    }
-    double totalWidth = width + 20;
-
-    // 2. Calculate Vertical Position correctly (matching MainAxisAlignment.spaceEvenly)
-    // Widget is 12x12 pixels.
-    const double pinSize = 12.0;
-
-    int count = isInput ? c.inputs.length : c.outputs.length;
-    // spaceEvenly formula:
-    // Gap = (TotalHeight - (Count * ItemSize)) / (Count + 1)
-    // TopPos(i) = Gap * (i+1) + ItemSize * i
-    // CenterPos(i) = TopPos(i) + ItemSize / 2
-
-    double gap = (height - (count * pinSize)) / (count + 1);
-    if (gap < 0) gap = 0; // Should not happen if height logic is correct
-
-    double topY = gap * (index + 1) + pinSize * index;
-    double y = c.position.dy + topY + pinSize / 2;
-
-    double x = c.position.dx;
-    if (isInput) {
-      x += 6;
-    } else {
-      x += totalWidth - 6;
-    }
-
-    return Offset(x, y);
   }
 
   void _handleDrop(BuildContext context, dynamic data, Offset dropPos) {

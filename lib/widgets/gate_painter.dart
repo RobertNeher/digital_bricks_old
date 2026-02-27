@@ -4,8 +4,13 @@ import '../models/logic_component.dart';
 class GatePainter extends CustomPainter {
   final ComponentType type;
   final Color color;
+  final bool isActive;
 
-  GatePainter({required this.type, this.color = Colors.black});
+  GatePainter({
+    required this.type,
+    this.color = Colors.black,
+    this.isActive = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -74,7 +79,7 @@ class GatePainter extends CustomPainter {
         break;
       case ComponentType.button:
         _drawBox(path, size);
-        _drawButtonSymbol(canvas, size);
+        _drawButtonSymbol(canvas, size, isActive);
         break;
       case ComponentType.markdownText:
         _drawBox(path, size);
@@ -107,28 +112,20 @@ class GatePainter extends CustomPainter {
   }
 
   void _drawDFFSymbols(Canvas canvas, Size size) {
-    // Clock Triangle on Input 1
-    // Input 0 is D (top-ish), Input 1 is Clock (bottom-ish)
-    // CircuitBoard layout puts inputs evenly spaced.
-    // D-FF has 2 inputs. pos 1 and 2.
-    // Wait, WirePainter calculates pos based on count.
-
-    // Draw Text Labels "D", "Q", "Qbar"
-    // Just manual offsets for simplicity
-
+    // Inputs: 0:D, 1:Clock, 2:PRE, 3:CLR. Outputs: 0:Q, 1:Qnot
     final textPaint = TextPainter(textDirection: TextDirection.ltr);
 
-    // D label (Pin 0, ~20%)
+    // D label (Pin 0)
     textPaint.text = const TextSpan(
       text: 'D',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.2 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 0, 4) - 5));
 
-    // Clock Triangle (Pin 1, ~40%)
+    // Clock Triangle (Pin 1)
     Path tri = Path();
-    double clkY = size.height * 0.4;
+    double clkY = _getInputY(size, 1, 4);
     tri.moveTo(0, clkY - 5);
     tri.lineTo(8, clkY);
     tri.lineTo(0, clkY + 5);
@@ -139,31 +136,34 @@ class GatePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
 
-    // PRE label (Pin 2, ~60%)
+    // PRE label (Pin 2)
     textPaint.text = const TextSpan(
       text: 'PRE',
       style: TextStyle(color: Colors.black, fontSize: 9),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.6 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 2, 4) - 5));
 
-    // CLR label (Pin 3, ~80%)
+    // CLR label (Pin 3)
     textPaint.text = const TextSpan(
       text: 'CLR',
       style: TextStyle(color: Colors.black, fontSize: 9),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.8 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 3, 4) - 5));
 
-    // Q label
+    // Q label (Pin 0)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 0, 2) - 5),
+    );
 
-    // Q_not label
+    // Q_not label (Pin 1)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(
@@ -173,39 +173,44 @@ class GatePainter extends CustomPainter {
       ),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 1, 2) - 5),
+    );
   }
 
   void _drawRSFFSymbols(Canvas canvas, Size size) {
-    // S (Set) at input 0 (top)
-    // R (Reset) at input 1 (bottom)
+    // Inputs: 0:S, 1:R. Outputs: 0:Q, 1:Qnot
     final textPaint = TextPainter(textDirection: TextDirection.ltr);
 
-    // S label
+    // S label (Pin 0)
     textPaint.text = const TextSpan(
       text: 'S',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.25 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 0, 2) - 5));
 
-    // R label
+    // R label (Pin 1)
     textPaint.text = const TextSpan(
       text: 'R',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.75 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 1, 2) - 5));
 
-    // Q label
+    // Q label (Pin 0)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 0, 2) - 5),
+    );
 
-    // Q_not label
+    // Q_not label (Pin 1)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(
@@ -215,7 +220,10 @@ class GatePainter extends CustomPainter {
       ),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 1, 2) - 5),
+    );
   }
 
   void _drawAnd(Path path, Size size) {
@@ -317,22 +325,17 @@ class GatePainter extends CustomPainter {
     canvas.drawPath(p, paint);
   }
 
-  void _drawButtonSymbol(Canvas canvas, Size size) {
+  void _drawButtonSymbol(Canvas canvas, Size size, bool active) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = active ? Colors.green : Colors.black
       ..style = PaintingStyle.fill;
 
     // Draw a circle in the center
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 8, paint);
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 10, paint);
   }
 
   void _drawJKFFSymbols(Canvas canvas, Size size) {
-    // Inputs: 0:J, 1:K, 2:Clk, 3:Pre, 4:Clr
-    // Standard spacing for 5 inputs means they are at 1/6, 2/6, 3/6, 4/6, 5/6
-    // Or wire painter uses different logic?
-    // Let's assume standard distribution for now.
-    // 0: ~16%, 1: ~33%, 2: ~50%, 3: ~66%, 4: ~83%
-
+    // Inputs: 0:J, 1:K, 2:Clk, 3:Pre, 4:Clr. Outputs: 0:Q, 1:Qnot
     final textPaint = TextPainter(textDirection: TextDirection.ltr);
 
     // J label (Pin 0)
@@ -341,7 +344,7 @@ class GatePainter extends CustomPainter {
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.17 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 0, 5) - 5));
 
     // K label (Pin 1)
     textPaint.text = const TextSpan(
@@ -349,11 +352,11 @@ class GatePainter extends CustomPainter {
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.33 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 1, 5) - 5));
 
     // Clock Triangle (Pin 2)
     Path tri = Path();
-    double clkY = size.height * 0.5;
+    double clkY = _getInputY(size, 2, 5);
     tri.moveTo(0, clkY - 5);
     tri.lineTo(8, clkY);
     tri.lineTo(0, clkY + 5);
@@ -370,7 +373,7 @@ class GatePainter extends CustomPainter {
       style: TextStyle(color: Colors.black, fontSize: 8),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.67 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 3, 5) - 5));
 
     // CLR label (Pin 4)
     textPaint.text = const TextSpan(
@@ -378,17 +381,20 @@ class GatePainter extends CustomPainter {
       style: TextStyle(color: Colors.black, fontSize: 8),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(2, size.height * 0.83 - 5));
+    textPaint.paint(canvas, Offset(2, _getInputY(size, 4, 5) - 5));
 
-    // Q label
+    // Q label (Pin 0)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(color: Colors.black, fontSize: 10),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.25 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 0, 2) - 5),
+    );
 
-    // Q_not label
+    // Q_not label (Pin 1)
     textPaint.text = const TextSpan(
       text: 'Q',
       style: TextStyle(
@@ -398,11 +404,41 @@ class GatePainter extends CustomPainter {
       ),
     );
     textPaint.layout();
-    textPaint.paint(canvas, Offset(size.width - 15, size.height * 0.75 - 5));
+    textPaint.paint(
+      canvas,
+      Offset(size.width - 15, _getOutputY(size, 1, 2) - 5),
+    );
+  }
+
+  // --- Helpers to mirror ComponentLayout logic ---
+
+  double _getInputY(Size size, int pinIndex, int totalPins) {
+    return _getPinY(size.height, pinIndex, totalPins);
+  }
+
+  double _getOutputY(Size size, int pinIndex, int totalPins) {
+    return _getPinY(size.height, pinIndex, totalPins);
+  }
+
+  double _getPinY(double canvasHeight, int pinIndex, int pinCount) {
+    // ComponentLayout.pinSize is 24.
+    const double pinSize = 24.0;
+    // gate_painter canvas has 10px padding top/bottom relative to totalHeight
+    double totalHeight = canvasHeight + 20;
+
+    double space = (totalHeight - (pinCount * pinSize)) / (pinCount + 1);
+    if (space < 0) space = 0;
+
+    double centerY =
+        space * (pinIndex + 1) + pinSize * pinIndex + (pinSize / 2);
+
+    return centerY - 10; // Adjust to local canvas coordinates
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+  bool shouldRepaint(covariant GatePainter oldDelegate) {
+    return oldDelegate.type != type ||
+        oldDelegate.color != color ||
+        oldDelegate.isActive != isActive;
   }
 }

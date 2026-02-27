@@ -23,6 +23,7 @@ class CircuitProvider extends ChangeNotifier {
   List<Connection> connections = [];
   // ignore: unused_field
   Timer? _simulationTimer;
+  String circuitSessionId = const Uuid().v4();
 
   // Simulation constants
   // Simulation constants
@@ -223,6 +224,14 @@ class CircuitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateComponentPosition(String id, Offset delta) {
+    try {
+      var comp = components.firstWhere((c) => c.id == id);
+      comp.position += delta;
+      notifyListeners();
+    } catch (_) {}
+  }
+
   // --- Bulk Actions ---
 
   void deleteSelectedComponents() {
@@ -243,6 +252,7 @@ class CircuitProvider extends ChangeNotifier {
     connections.clear();
     selectedComponentIds.clear();
     currentFilePath = null;
+    circuitSessionId = const Uuid().v4();
     notifyListeners();
   }
 
@@ -390,6 +400,7 @@ class CircuitProvider extends ChangeNotifier {
       components.clear();
       connections.clear();
       selectedComponentIds.clear();
+      circuitSessionId = const Uuid().v4();
     }
 
     try {
@@ -523,8 +534,8 @@ class CircuitProvider extends ChangeNotifier {
         comp = Led(
           id: id,
           position: pos,
-          colorHigh: json['colorHigh'],
-          colorLow: json['colorLow'],
+          colorHigh: json['colorHigh'] ?? 0xFFFF0000,
+          colorLow: json['colorLow'] ?? 0xFF550000,
         );
         break;
       case ComponentType.segment7:

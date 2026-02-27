@@ -2,81 +2,105 @@ import 'package:flutter/material.dart';
 import '../models/logic_component.dart';
 import '../models/io_devices.dart';
 import '../models/integrated_circuit.dart';
+import '../models/markdown_component.dart';
+
+class ComponentLayoutMetadata {
+  final double totalWidth;
+  final double totalHeight;
+  final double inputColWidth;
+  final double bodyWidth;
+  final double outputColWidth;
+
+  ComponentLayoutMetadata({
+    required this.totalWidth,
+    required this.totalHeight,
+    required this.inputColWidth,
+    required this.bodyWidth,
+    required this.outputColWidth,
+  });
+
+  Size get size => Size(totalWidth, totalHeight);
+}
 
 class ComponentLayout {
-  // Constants tailored to match ComponentWidget rendering exactly
   static const double baseHeight = 60.0;
   static const double baseWidth = 60.0;
-  // ComponentWidget uses 24.0 for height per pin when > 2 pins
   static const double heightPerPin = 24.0;
-  static const double pinSize =
-      12.0; // The inner circle size of PinWidget? No, visual size.
-  // PinWidget container is 24x24, but the visual pin is 12x12 inside it.
-  // We need to know the CENTER of the pin.
-  // In ComponentWidget, PinWidget is in a Column with MainAxisAlignment.spaceEvenly.
-  // The Column height is determined by getComponentSize.height.
-  // The PinWidget takes up 24x24 space (DragTarget container).
+  static const double pinSize = 24.0; // The container size in PinWidget
 
-  static Size getComponentSize(LogicComponent component) {
-    double height = baseHeight;
+  static ComponentLayoutMetadata getLayoutMetadata(LogicComponent component) {
+    // 1. Calculate Body Dimensions
+    double bodyHeight = baseHeight;
     int maxPins = component.inputs.length > component.outputs.length
         ? component.inputs.length
         : component.outputs.length;
 
-    // Logic from ComponentWidget:
-    // if (maxPins > 2) { height = maxPins * 24.0; if (height < 60) height = 60; }
     if (maxPins > 2) {
-      height = maxPins * heightPerPin;
-      if (height < baseHeight) height = baseHeight;
+      bodyHeight = maxPins * heightPerPin;
+      if (bodyHeight < baseHeight) bodyHeight = baseHeight;
     }
 
-    double width = baseWidth;
-    if (component is SegmentDisplay) {
+    if (component.type == ComponentType.dFlipFlop ||
+        component.type == ComponentType.rsFlipFlop ||
+        component.type == ComponentType.jkFlipFlop) {
+      bodyHeight += 20.0;
+    }
+
+    double bodyWidth = baseWidth;
+    if (component is MarkdownComponent) {
+      bodyWidth = 250.0;
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: component.text,
+          style: const TextStyle(fontSize: 12),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout(maxWidth: bodyWidth - 24);
+      double multiplier = component.text.contains('|') ? 4.0 : 2.0;
+      bodyHeight = (textPainter.height * multiplier) + 80.0;
+    } else if (component is SegmentDisplay) {
       double fontH = component.fontSize;
-      if (fontH < 30) fontH = 30; // Enforce minimum as per ComponentWidget
-
-      double pinH = component.inputs.length * 24.0;
-      height = fontH > pinH ? fontH : pinH;
-      height += 10; // Extra padding as per ComponentWidget
-
-      bool is7Seg = component.segments == 7;
-      double ratio = is7Seg ? 0.6 : 0.8;
-      double bodyW = fontH * ratio;
-
-      // Dynamic Input Width
-      double maxLabelW = 0;
-      // Labels are 0..n-1. Max length is 1 or 2 usually.
-      String maxLabel = (component.inputs.length - 1).toString();
-      maxLabelW = maxLabel.length * 10.0; // approx 10px per char for bold text
-      if (maxLabelW < 10.0) maxLabelW = 10.0; // min width
-
-      double inputW = 24.0 + 8.0 + maxLabelW; // Pin + Gap + Label
-      double gapW = 20.0;
-
-      width = inputW + gapW + bodyW;
-
-      // ComponentWidget adds +20 at the return SizedBox.
-      // getComponentSize serves the "logical" size which typically INCLUDES visual additions?
-      // ComponentWidget returns `SizedBox(width: width + 20)`.
-      // So logical width should include that +20.
-      width += 20;
+      if (fontH < 30) fontH = 30;
+      double pinH = component.inputs.length * heightPerPin;
+      bodyHeight = fontH > pinH ? fontH : pinH;
+      bodyHeight += 10;
+      bodyWidth = fontH * (component.segments == 7 ? 0.6 : 0.8);
     }
+
+    // 2. Calculate Column Widths (Pins + Labels)
+    double inputColWidth = pinSize;
+    double outputColWidth = pinSize;
 
     if (component is IntegratedCircuit) {
-      double maxInW = 0;
-      double maxOutW = 0;
-      const double charWidth = 8.0;
-
+      double maxInL = 0;
+      double maxOutL = 0;
+      const double charW = 7.0; // Consistent with ComponentWidget
       for (var l in component.blueprint.inputLabels) {
-        if (l.length * charWidth > maxInW) maxInW = l.length * charWidth;
+        if (l.length * charW > maxInL) maxInL = l.length * charW;
       }
       for (var l in component.blueprint.outputLabels) {
-        if (l.length * charWidth > maxOutW) maxOutW = l.length * charWidth;
+        if (l.length * charW > maxOutL) maxOutL = l.length * charW;
       }
-      width = 60.0 + maxInW + maxOutW;
+      inputColWidth += maxInL + 4;
+      outputColWidth += maxOutL + 4;
+    } else if (component is SegmentDisplay) {
+      inputColWidth += 24.0;
     }
 
-    return Size(width, height);
+    double totalWidth = inputColWidth + bodyWidth + outputColWidth;
+
+    return ComponentLayoutMetadata(
+      totalWidth: totalWidth,
+      totalHeight: bodyHeight,
+      inputColWidth: inputColWidth,
+      bodyWidth: bodyWidth,
+      outputColWidth: outputColWidth,
+    );
+  }
+
+  static Size getComponentSize(LogicComponent component) {
+    return getLayoutMetadata(component).size;
   }
 
   static Offset getPinPosition(
@@ -84,72 +108,22 @@ class ComponentLayout {
     int pinIndex,
     bool isInput,
   ) {
-    Size size = getComponentSize(component);
+    final meta = getLayoutMetadata(component);
 
-    // Horizontal Position
-    // ComponentWidget Structure:
-    // Row [ Inputs (Column), Body (Expanded), Outputs (Column) ]
-    // Container width = width + 20.
-    // Inputs Column is at x=0 relative to Container.
-    // Body starts after Inputs Column.
-    // PinWidget is 24 width.
-    // But wait, PinWidget is wrapped in a Row if there are labels (IntegratedCircuit).
-    // Let's look at ComponentWidget layout again.
+    // X position: Center of PinWidget (24x24)
+    // For Inputs: Far left of inputColumn, Pin is first.
+    // For Outputs: Far right of outputColumn, Pin is last.
+    double centerX = isInput
+        ? (pinSize / 2)
+        : (meta.totalWidth - (pinSize / 2));
 
-    // The main Container has width: width + 20.
-    // Inside is a Row.
-    // Child 1: Inputs Column. wrapped in mainAxisSize: min.
-    // Child 2: Body (Expanded).
-    // Child 3: Outputs Column. wrapped in mainAxisSize: min.
-
-    // PinWidget itself has width 24. Structure: Center(Container(12,12)).
-    // So the center of the pin is at local x=12, y=12 relative to PinWidget.
-
-    // Logic for X:
-    // If Input: It is in the first Column.
-    // If it's an IC with labels, it's Row(PinWidget, SizedBox(4), Text).
-    // The PinWidget is on the left.
-    // So Pin Center X relative to component position = 12.0.
-    // Wait, ComponentWidget renders PinWidget directly if no label.
-    // If label (IC), it renders Row([PinWidget, Gap, Text]).
-    // So PinWidget is still on the far left.
-    // So for Inputs, Center X is roughly 12.0.
-
-    // If Output: It is in the last Column.
-    // If IC with label: Row([Text, Gap, PinWidget]).
-    // The PinWidget is on the right.
-    // The outer Container width is `size.width + 20`.
-    // The right column is aligned to right edge? No, it's just the last child of a Row.
-    // But Body is Expanded. So Input Column is at Left, Output Column is at Right.
-    // So Output Column ends at `size.width + 20`.
-    // PinWidget is 24 wide. Center is -12 from right edge.
-    // So X = (size.width + 20) - 12.
-
-    double centerX = isInput ? 12.0 : (size.width + 20.0 - 12.0);
-
-    // Vertical Position
-    // Column uses MainAxisAlignment.spaceEvenly.
-    // Available height = size.height.
-    // Items in Column.
-    // Each item height is...
-    // PinWidget height is 24.
-    // If IC with label, Row height is defined by PinWidget (24) vs Text(fontSize 10). So 24 is max.
-    // So we can assume item height is 24.
-
-    // SpaceEvenly Logic:
-    // space = (totalHeight - (count * itemHeight)) / (count + 1)
-    // y[i] = space * (i + 1) + itemHeight * i + itemHeight / 2
-
+    // Y position: spaceEvenly Column
     int count = isInput ? component.inputs.length : component.outputs.length;
-    double itemHeight = 24.0;
-
-    double space = (size.height - (count * itemHeight)) / (count + 1);
-    // If overflow happened (negative space), Flutter flex behavior clamps to start/center?
-    // ComponentWidget grew the height to ensure it fits, so space >= 0 usually.
+    double space = (meta.totalHeight - (count * pinSize)) / (count + 1);
     if (space < 0) space = 0;
 
     double centerY =
-        space * (pinIndex + 1) + itemHeight * pinIndex + (itemHeight / 2);
+        space * (pinIndex + 1) + pinSize * pinIndex + (pinSize / 2);
 
     return component.position + Offset(centerX, centerY);
   }

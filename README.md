@@ -1,10 +1,10 @@
 # Digital Bricks
 
-Simulation of digital ircuits.
+Simulation of digital circuits.
 
 ## Standard gates
 
-All, but Inverter do have 2 input ports, which may be increased to 3, 4, or 8 inputs
+All gates except the Inverter have 2 input ports by default, which can be increased to 3, 4, or 8 inputs via the context menu.
 
 * AND
 * NAND
@@ -13,67 +13,56 @@ All, but Inverter do have 2 input ports, which may be increased to 3, 4, or 8 in
 * XOR
 * NXOR
 * Inverter
-* Constant value: Either 1 or 0 as parameter
 
 ## Flip-flops
 
-* D
+* D (with Reset and Preset)
 * RS
+* JK (with Reset and Preset)
 
 ## Input/Output Components
 
-* Circuit Input/Ouput: For circuit developmeent definition of pins exposed for reuse and gaining access to internal logic
-* Oscillator: with frequency as parameter
-* LED: definable on and off color as parameters
-* 7 and 16 segment display
+* Circuit Input/Output: Use these to define the pins exposed when reusing a circuit as a custom component.
+* Oscillator: Generates a clock signal with parameterizable frequency.
+* LED: Visual indicator with customizable "High" and "Low" state colors.
+* Button: Interactive toggle component. Click to switch between High (on) and Low (off).
+* 7 and 16 segment display: Multi-segment indicators with customizable colors and font sizes.
 
-## Custom
+## Custom Components
 
-* In this compartment you get list of your blueprint circuits
-* All circuits here are stored in a "blueprints.json" file and can be reloaded by clicking on the upward arrow (right from compartment name)
+* Select any part of your circuit and save it as a "blueprint" to reuse it as a single component.
+* Custom components are stored in `blueprints.json` and can be reloaded using the refresh icon in the Custom compartment.
+* Custom components maintain the same visual style (surrounding box and pins) as standard gates.
 
-### Definition of your own custom circuits
+### Creating Custom Circuits
 
- 1 Design your circuit with the standard gates and other custom circuits
+1. Design your circuit using standard gates, IO components, and other custom circuits.
+2. Use **Circuit Input/Output** components to define the external pins. Inputs should be on the left, outputs on the right.
+3. Select all items to be included, then click the **Save (Disk)** icon in the selection toolbar.
+4. Provide a name; if the name already exists, the blueprint will be overwritten.
 
-* Use "Circuit Input/Output" to define the pins to be exposed when reusing. The input pins are on the left side of the circuit the output pins on the right
+## Interaction
 
- 2 Select all items which should be part of the circuit. Don't forget the input and output pins.
- 
- 3 After selection click on the disc symbol and set the name of your custom circuit. If the name exists already, the existing circuit will be _overwritten_
+* **Connections**: Drag from a source pin to any target input pin. Right-click a connection to delete it.
+* **Selection**: Click to select, or use a selection marquee. Selected items can be moved as a group.
+* **Context Menu**: Right-click any component to access its parameters (labels, frequency, colors, pin counts).
+* **Canvas**: The canvas is an expansive 10000x10000 area, allowing for very large and complex designs.
 
-## Connections
+## File Operations
 
-Just drag from source pin to any target pin, but output pins.
-Right-click on connection to delete it
+Use the icons in the top-right toolbar:
+1. **Save**: Saves the current design to `circuit.json`.
+2. **Save As**: Choose a specific location and filename.
+3. **Open**: Load a previously saved circuit design.
+4. **Clear Canvas**: Empties the canvas (requires confirmation).
 
-## Parameter
+## Shortcut Keys
 
-Access parameter of circuit by right-clicking on the circuit.
-
-## Save, read circuit design
-
-Use the icons in the task bar on the top right:
-1 Save: Uses circuit.json as default name
-
-2 Save as: Define the location and file name and press 'Save'
-
-3 Open: Select a circuit design (a JSON file)
-
-4 Clear canvas: clicking on the reload symbol empties the entire canvas. A confirmation is requested to prevent an unintential deletion.
-
-# Keys
-
-| Key | Meaning |
+| Key | Action |
 | ---- | -------- |
-| ^a | Select all |
-| ^s | Save |
-| ^o | Open |
-| \<up\> | Move selected items upwards |
-| \<down\> | Move selected items downwards |
-| \<left\> | Move selected items left |
-| \<right\> | Move selected items right |
-| Backspace | Delete selected items |
-| Del | Delete selected items |
-
-
+| `Ctrl + A` | Select All |
+| `Ctrl + S` | Save |
+| `Ctrl + O` | Open |
+| `Up/Down/Left/Right` | Move selected items |
+| `Backspace / Del` | Delete selected items |
+| `Enter` | Submit values in parameter dialogs |

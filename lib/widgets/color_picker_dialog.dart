@@ -41,8 +41,8 @@ Future<void> showColorPicker(
         colorCodeTextStyle: Theme.of(context).textTheme.bodySmall,
         pickersEnabled: const <ColorPickerType, bool>{
           ColorPickerType.both: false,
-          ColorPickerType.primary: true,
-          ColorPickerType.accent: true,
+          ColorPickerType.primary: false,
+          ColorPickerType.accent: false,
           ColorPickerType.bw: false,
           ColorPickerType.custom: false,
           ColorPickerType.wheel: true,
