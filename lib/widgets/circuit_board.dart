@@ -61,6 +61,30 @@ class _CircuitBoardState extends State<CircuitBoard> {
   Widget build(BuildContext context) {
     final provider = Provider.of<CircuitProvider>(context);
 
+    // Register viewport calculator
+    provider.getViewportCenter = () {
+      final RenderBox? canvasBox =
+          _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+      if (canvasBox != null) {
+        // The center of the visible area of the CircuitBoard
+        final RenderBox viewportBox = context.findRenderObject() as RenderBox;
+        final Offset centerGlobal = viewportBox.localToGlobal(
+          Offset(viewportBox.size.width / 2, viewportBox.size.height / 2),
+        );
+
+        // Convert to local coordinates of the canvas Container
+        Offset localCenter = canvasBox.globalToLocal(centerGlobal);
+
+        // Snap to grid
+        double gs = CircuitProvider.gridSize;
+        return Offset(
+          (localCenter.dx / gs).round() * gs,
+          (localCenter.dy / gs).round() * gs,
+        );
+      }
+      return const Offset(500, 500); // Sensible fallback
+    };
+
     // Canvas size
     const double canvasWidth = 10000;
     const double canvasHeight = 10000;
@@ -97,7 +121,12 @@ class _CircuitBoardState extends State<CircuitBoard> {
         DeleteIntent: DeleteComponentAction(provider),
         SelectAllIntent: SelectAllAction(provider),
         SaveIntent: SaveCircuitAction(provider),
-        OpenIntent: OpenCircuitAction(provider),
+        OpenIntent: CallbackAction<OpenIntent>(
+          onInvoke: (intent) {
+            provider.loadCircuit();
+            return null;
+          },
+        ),
         CancelSelectionIntent: CancelSelectionAction(provider),
         MoveIntent: MoveComponentAction(provider),
       },
@@ -490,16 +519,6 @@ class SaveCircuitAction extends CircuitAction<SaveIntent> {
   @override
   Object? invoke(SaveIntent intent) {
     provider.saveCurrentCircuit();
-    return null;
-  }
-}
-
-class OpenCircuitAction extends CircuitAction<OpenIntent> {
-  final CircuitProvider provider;
-  OpenCircuitAction(this.provider);
-  @override
-  Object? invoke(OpenIntent intent) {
-    provider.loadCircuit();
     return null;
   }
 }

@@ -177,6 +177,8 @@ class ComponentWidget extends StatelessWidget {
                                       painter: ICPainter(
                                         (component as IntegratedCircuit)
                                             .internalComponents,
+                                        component.inputs,
+                                        component.outputs,
                                       ),
                                     ),
                                   ),

@@ -54,7 +54,12 @@ class IntegratedCircuit extends LogicComponent {
     for (int i = 0; i < blueprint.inputPorts.length; i++) {
       String internalPinId = blueprint.inputPorts[i];
       String extId = "$id-in-$i";
-      inputs.add(Pin(id: extId, componentId: id, type: PinType.input));
+      String label = (i < blueprint.inputLabels.length)
+          ? blueprint.inputLabels[i]
+          : "IN";
+      inputs.add(
+        Pin(id: extId, componentId: id, type: PinType.input, label: label),
+      );
       inputMap[extId] = internalPinId;
     }
 
@@ -62,7 +67,12 @@ class IntegratedCircuit extends LogicComponent {
     for (int i = 0; i < blueprint.outputPorts.length; i++) {
       String internalPinId = blueprint.outputPorts[i];
       String extId = "$id-out-$i";
-      outputs.add(Pin(id: extId, componentId: id, type: PinType.output));
+      String label = (i < blueprint.outputLabels.length)
+          ? blueprint.outputLabels[i]
+          : "OUT";
+      outputs.add(
+        Pin(id: extId, componentId: id, type: PinType.output, label: label),
+      );
       outputMap[extId] = internalPinId;
     }
   }

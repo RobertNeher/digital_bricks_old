@@ -16,6 +16,7 @@ import 'models/pin.dart';
 import 'models/saved_circuit.dart';
 import 'models/integrated_circuit.dart';
 import 'models/circuit_io.dart';
+import 'utils/component_layout.dart';
 import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
@@ -24,6 +25,10 @@ class CircuitProvider extends ChangeNotifier {
   // ignore: unused_field
   Timer? _simulationTimer;
   String circuitSessionId = const Uuid().v4();
+  String? currentFilePath;
+
+  // Callback to get current viewport center from UI
+  Offset Function()? getViewportCenter;
 
   // Simulation constants
   // Simulation constants
@@ -300,8 +305,6 @@ class CircuitProvider extends ChangeNotifier {
 
   // --- Save / Load ---
 
-  String? currentFilePath;
-
   // Generic save: requires currentFilePath or prompts user
   Future<void> saveCurrentCircuit() async {
     if (currentFilePath != null) {
@@ -372,7 +375,8 @@ class CircuitProvider extends ChangeNotifier {
     debugPrint("saveCircuitToPath: write complete");
   }
 
-  Future<Map<String, dynamic>?> pickAndReadCircuit() async {
+  Future<({Map<String, dynamic> data, String name})?>
+  pickAndReadCircuit() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result == null) return null;
 
@@ -385,7 +389,12 @@ class CircuitProvider extends ChangeNotifier {
     if (content.isEmpty) return null;
 
     try {
-      return jsonDecode(content) as Map<String, dynamic>;
+      final data = jsonDecode(content) as Map<String, dynamic>;
+      String name = pFile.name;
+      if (name.toLowerCase().endsWith(".json")) {
+        name = name.substring(0, name.length - 5);
+      }
+      return (data: data, name: name);
     } catch (e) {
       debugPrint("Error decoding circuit: $e");
       return null;
@@ -395,12 +404,47 @@ class CircuitProvider extends ChangeNotifier {
   void applyCircuitData(
     Map<String, dynamic> jsonMap, {
     bool clearCanvas = true,
+    String? name,
+    Offset? position,
   }) {
+    String finalName = name ?? "Loaded Circuit";
     if (clearCanvas) {
       components.clear();
       connections.clear();
       selectedComponentIds.clear();
       circuitSessionId = const Uuid().v4();
+
+      // NEW: Check for IO pins to auto-wrap as component
+      if (_hasIOCircuit(jsonMap)) {
+        debugPrint(
+          "Detected IO pins in circuit '$finalName'. Auto-wrapping as Integrated Circuit.",
+        );
+        try {
+          SavedCircuit blueprint = _convertJsonToSavedCircuit(
+            jsonMap,
+            finalName,
+          );
+          // NEW: Use provided position, fallback to callback, then default
+          Offset icPos =
+              position ?? getViewportCenter?.call() ?? const Offset(100, 100);
+          String icId = const Uuid().v4();
+          IntegratedCircuit ic = IntegratedCircuit(
+            id: icId,
+            position: icPos,
+            blueprint: blueprint,
+          );
+          // Center it on the target position
+          Size icSize = ComponentLayout.getComponentSize(ic);
+          ic.position -= Offset(icSize.width / 2, icSize.height / 2);
+
+          components.add(ic);
+          notifyListeners();
+          return;
+        } catch (e) {
+          debugPrint("Error auto-wrapping circuit: $e");
+          // Fallback to normal loading if wrapping fails
+        }
+      }
     }
 
     try {
@@ -473,6 +517,61 @@ class CircuitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _hasIOCircuit(Map<String, dynamic> json) {
+    if (!json.containsKey('components')) return false;
+    for (var comp in json['components']) {
+      int typeIdx = comp['type'] ?? -1;
+      if (typeIdx == ComponentType.circuitInput.index ||
+          typeIdx == ComponentType.circuitOutput.index) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  SavedCircuit _convertJsonToSavedCircuit(
+    Map<String, dynamic> json,
+    String name,
+  ) {
+    List<Map<String, dynamic>> comps = List<Map<String, dynamic>>.from(
+      json['components'],
+    );
+    List<Map<String, dynamic>> conns = List<Map<String, dynamic>>.from(
+      json['connections'],
+    );
+
+    List<String> inputPorts = [];
+    List<String> outputPorts = [];
+    List<String> inputLabels = [];
+    List<String> outputLabels = [];
+
+    // Extract IO Ports
+    for (var comp in comps) {
+      int typeIdx = comp['type'];
+      String id = comp['id'];
+
+      if (typeIdx == ComponentType.circuitInput.index) {
+        // CircuitInput has one output pin: id-out-0
+        inputPorts.add("$id-out-0");
+        inputLabels.add(comp['label'] ?? "IN");
+      } else if (typeIdx == ComponentType.circuitOutput.index) {
+        // CircuitOutput has one input pin: id-in-0
+        outputPorts.add("$id-in-0");
+        outputLabels.add(comp['label'] ?? "OUT");
+      }
+    }
+
+    return SavedCircuit(
+      name: name,
+      components: comps,
+      connections: conns,
+      inputPorts: inputPorts,
+      outputPorts: outputPorts,
+      inputLabels: inputLabels,
+      outputLabels: outputLabels,
+    );
+  }
+
   String? _remapPinIdHelper(String oldPinId, Map<String, String> idMap) {
     for (var entry in idMap.entries) {
       if (oldPinId.startsWith(entry.key)) {
@@ -483,10 +582,15 @@ class CircuitProvider extends ChangeNotifier {
     return null;
   }
 
-  Future<void> loadCircuit() async {
-    final data = await pickAndReadCircuit();
-    if (data != null) {
-      applyCircuitData(data, clearCanvas: true);
+  Future<void> loadCircuit({Offset? position}) async {
+    final result = await pickAndReadCircuit();
+    if (result != null) {
+      applyCircuitData(
+        result.data,
+        clearCanvas: true,
+        name: result.name,
+        position: position,
+      );
     }
   }
 

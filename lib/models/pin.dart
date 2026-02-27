@@ -4,12 +4,14 @@ class Pin {
   final String id; // Unique ID for the pin (usually "componentId-pinIndex")
   final String componentId;
   final PinType type;
+  String? label;
   bool value;
 
   Pin({
     required this.id,
     required this.componentId,
     required this.type,
+    this.label,
     this.value = false,
   });
 
@@ -18,6 +20,7 @@ class Pin {
       'id': id,
       'componentId': componentId,
       'type': type.index,
+      'label': label,
       'value': value,
     };
   }
@@ -27,6 +30,7 @@ class Pin {
       id: json['id'],
       componentId: json['componentId'],
       type: PinType.values[json['type']],
+      label: json['label'],
       value: json['value'] ?? false,
     );
   }

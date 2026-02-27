@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/logic_component.dart';
+import '../models/pin.dart';
 import 'gate_painter.dart';
 
 class ICPainter extends CustomPainter {
   final List<LogicComponent> components;
+  final List<Pin> inputs;
+  final List<Pin> outputs;
 
-  ICPainter(this.components);
+  ICPainter(this.components, this.inputs, this.outputs);
 
   @override
   void paint(Canvas canvas, Size size) {
