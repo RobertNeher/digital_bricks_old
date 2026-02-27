@@ -86,6 +86,8 @@ class ICPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ICPainter oldDelegate) {
-    return oldDelegate.components != components;
+    // For Integrated Circuits, we often need to repaint to show internal states
+    // (LEDs, gates etc.) changing during simulation.
+    return true;
   }
 }

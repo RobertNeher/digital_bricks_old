@@ -8,7 +8,6 @@ import 'gates.dart';
 import 'io_devices.dart';
 import 'memory.dart';
 import 'circuit_io.dart';
-// import 'package:uuid/uuid.dart';
 
 class IntegratedCircuit extends LogicComponent {
   final SavedCircuit blueprint;
@@ -18,6 +17,9 @@ class IntegratedCircuit extends LogicComponent {
   // Mapping from External Pin ID -> Internal Pin ID
   final Map<String, String> inputMap = {};
   final Map<String, String> outputMap = {};
+
+  // Cache for fast lookups
+  final Map<String, Pin> _pinMap = {};
 
   final int depth;
   static const int maxDepth = 20;
@@ -49,7 +51,10 @@ class IntegratedCircuit extends LogicComponent {
       internalConnections.add(Connection.fromJson(connData));
     }
 
-    // 3. Create External Pins maps
+    // 3. Build lookup map
+    _buildPinMap();
+
+    // 4. Create External Pins and maps
     // Inputs
     for (int i = 0; i < blueprint.inputPorts.length; i++) {
       String internalPinId = blueprint.inputPorts[i];
@@ -77,14 +82,22 @@ class IntegratedCircuit extends LogicComponent {
     }
   }
 
+  void _buildPinMap() {
+    _pinMap.clear();
+    for (var c in internalComponents) {
+      for (var p in c.inputs) {
+        _pinMap[p.id] = p;
+      }
+      for (var p in c.outputs) {
+        _pinMap[p.id] = p;
+      }
+    }
+  }
+
   LogicComponent _deserializeInternal(Map<String, dynamic> json) {
     ComponentType type = ComponentType.values[json['type']];
     Offset pos = Offset(json['position_dx'], json['position_dy']);
     String compId = json['id'];
-
-    // Simplified deserializer - similar to CircuitProvider but just for these types
-    // Note: We reuse the IDs from the blueprint for internal state.
-    // This is fine because checks are scoped to 'internalComponents' list.
 
     switch (type) {
       case ComponentType.and:
@@ -162,21 +175,18 @@ class IntegratedCircuit extends LogicComponent {
         );
       case ComponentType.dFlipFlop:
         var ff = DFlipFlop(id: compId, position: pos);
-        if (json.containsKey('storedValue')) {
+        if (json.containsKey('storedValue'))
           ff.setStoredValue(json['storedValue']);
-        }
         return ff;
       case ComponentType.rsFlipFlop:
         var ff = RsFlipFlop(id: compId, position: pos);
-        if (json.containsKey('storedValue')) {
+        if (json.containsKey('storedValue'))
           ff.setStoredValue(json['storedValue']);
-        }
         return ff;
       case ComponentType.jkFlipFlop:
         var ff = JKFlipFlop(id: compId, position: pos);
-        if (json.containsKey('storedValue')) {
+        if (json.containsKey('storedValue'))
           ff.setStoredValue(json['storedValue']);
-        }
         return ff;
       case ComponentType.custom:
         SavedCircuit bp = SavedCircuit.fromJson(json['blueprint']);
@@ -196,9 +206,7 @@ class IntegratedCircuit extends LogicComponent {
         return co;
       case ComponentType.button:
         var btn = ButtonComponent(id: compId, position: pos);
-        if (json.containsKey('isPressed')) {
-          btn.isPressed = json['isPressed'];
-        }
+        if (json.containsKey('isPressed')) btn.isPressed = json['isPressed'];
         return btn;
       case ComponentType.markdownText:
         return MarkdownComponent(
@@ -209,17 +217,7 @@ class IntegratedCircuit extends LogicComponent {
     }
   }
 
-  Pin? _findInternalPin(String pinId) {
-    for (var c in internalComponents) {
-      for (var p in c.inputs) {
-        if (p.id == pinId) return p;
-      }
-      for (var p in c.outputs) {
-        if (p.id == pinId) return p;
-      }
-    }
-    return null;
-  }
+  Pin? _findInternalPin(String pinId) => _pinMap[pinId];
 
   @override
   void evaluate() {
@@ -234,11 +232,9 @@ class IntegratedCircuit extends LogicComponent {
       }
     }
 
-    // 2. Propagate Internal Connections & Evaluate (One Step)
-    // To be more robust, we might loop this a few times or just once.
-    // For chained logic to work in one tick, we need propagation.
-    // Let's do a mini-propagation loop (max 5 output depths)
-    for (int i = 0; i < 5; i++) {
+    // 2. Propagate Internal Connections & Evaluate
+    // 2 passes - the global tick will handle subsequent settling
+    for (int i = 0; i < 2; i++) {
       bool changed = false;
       // Propagate wires
       for (var conn in internalConnections) {
@@ -254,13 +250,14 @@ class IntegratedCircuit extends LogicComponent {
 
       // Evaluate components
       for (var comp in internalComponents) {
-        List<bool> old = comp.outputs.map((p) => p.value).toList();
+        List<bool> oldState = comp.outputs.map((p) => p.value).toList();
         comp.evaluate();
         for (int k = 0; k < comp.outputs.length; k++) {
-          if (comp.outputs[k].value != old[k]) changed = true;
+          if (comp.outputs[k].value != oldState[k]) {
+            changed = true;
+          }
         }
       }
-
       if (!changed) break;
     }
 
@@ -278,9 +275,6 @@ class IntegratedCircuit extends LogicComponent {
 
   @override
   Map<String, dynamic> toJson() {
-    // We don't really save ICs yet in the main save file properly?
-    // Or we do. If we do, we need to save the blueprint NAME somehow, or embed it?
-    // Embedding it is safer for now.
     return {
       'id': id,
       'type': type.index,

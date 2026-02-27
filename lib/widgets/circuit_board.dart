@@ -15,7 +15,6 @@ class CircuitBoard extends StatefulWidget {
   const CircuitBoard({super.key});
 
   @override
-  @override
   State<CircuitBoard> createState() => _CircuitBoardState();
 }
 
@@ -151,7 +150,6 @@ class _CircuitBoardState extends State<CircuitBoard> {
 
               // Interactive Workspace
               InteractiveViewer(
-                key: ValueKey(provider.circuitSessionId),
                 transformationController: _transformController,
                 boundaryMargin: const EdgeInsets.all(double.infinity),
                 minScale: 0.1,

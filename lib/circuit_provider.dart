@@ -413,37 +413,34 @@ class CircuitProvider extends ChangeNotifier {
       connections.clear();
       selectedComponentIds.clear();
       circuitSessionId = const Uuid().v4();
+    }
 
-      // NEW: Check for IO pins to auto-wrap as component
-      if (_hasIOCircuit(jsonMap)) {
-        debugPrint(
-          "Detected IO pins in circuit '$finalName'. Auto-wrapping as Integrated Circuit.",
+    // NEW: Check for IO pins to auto-wrap as component
+    if (_hasIOCircuit(jsonMap)) {
+      debugPrint(
+        "Detected IO pins in circuit '$finalName'. Auto-wrapping as Integrated Circuit.",
+      );
+      try {
+        SavedCircuit blueprint = _convertJsonToSavedCircuit(jsonMap, finalName);
+        // NEW: Use provided position, fallback to callback, then default
+        Offset icPos =
+            position ?? getViewportCenter?.call() ?? const Offset(100, 100);
+        String icId = const Uuid().v4();
+        IntegratedCircuit ic = IntegratedCircuit(
+          id: icId,
+          position: icPos,
+          blueprint: blueprint,
         );
-        try {
-          SavedCircuit blueprint = _convertJsonToSavedCircuit(
-            jsonMap,
-            finalName,
-          );
-          // NEW: Use provided position, fallback to callback, then default
-          Offset icPos =
-              position ?? getViewportCenter?.call() ?? const Offset(100, 100);
-          String icId = const Uuid().v4();
-          IntegratedCircuit ic = IntegratedCircuit(
-            id: icId,
-            position: icPos,
-            blueprint: blueprint,
-          );
-          // Center it on the target position
-          Size icSize = ComponentLayout.getComponentSize(ic);
-          ic.position -= Offset(icSize.width / 2, icSize.height / 2);
+        // Center it on the target position
+        Size icSize = ComponentLayout.getComponentSize(ic);
+        ic.position -= Offset(icSize.width / 2, icSize.height / 2);
 
-          components.add(ic);
-          notifyListeners();
-          return;
-        } catch (e) {
-          debugPrint("Error auto-wrapping circuit: $e");
-          // Fallback to normal loading if wrapping fails
-        }
+        components.add(ic);
+        notifyListeners();
+        return;
+      } catch (e) {
+        debugPrint("Error auto-wrapping circuit: $e");
+        // Fallback to normal loading if wrapping fails
       }
     }
 
