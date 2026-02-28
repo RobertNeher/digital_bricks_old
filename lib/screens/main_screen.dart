@@ -59,10 +59,22 @@ class MainScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.save_as),
-            onPressed: () => Provider.of<CircuitProvider>(
-              context,
-              listen: false,
-            ).saveCircuitAs(),
+            onPressed: () async {
+              final provider = Provider.of<CircuitProvider>(context, listen: false);
+              final oldPath = provider.currentFilePath;
+              await provider.saveCircuitAs();
+              if (context.mounted) {
+                if (provider.currentFilePath != null && provider.currentFilePath != oldPath) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Saved as: ${provider.currentFilePath!.split(provider.pathSeparator).last}")),
+                  );
+                } else if (provider.currentFilePath != null) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Saved circuit.")),
+                  );
+                }
+              }
+            },
             tooltip: "Save As",
           ),
           IconButton(

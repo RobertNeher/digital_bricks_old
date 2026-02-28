@@ -12,15 +12,43 @@ class FileOpsImpl {
 
   static Future<String?> saveFile(String content, String fileName) async {
     String? initialDir = await getAssetsDirectory();
-    String? outputFile = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Circuit',
-      fileName: fileName,
-      initialDirectory: initialDir,
-    );
+    try {
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Circuit As',
+        fileName: fileName,
+        initialDirectory: initialDir,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
 
-    if (outputFile != null) {
-      await File(outputFile).writeAsString(content);
-      return outputFile;
+      if (outputFile != null) {
+        // Ensure extension is present
+        if (!outputFile.toLowerCase().endsWith('.json')) {
+          outputFile += '.json';
+        }
+        await File(outputFile).writeAsString(content);
+        return outputFile;
+      }
+    } catch (e) {
+      print("Error in FileOpsImpl.saveFile: $e");
+      // Fallback: try without initialDirectory
+      try {
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Circuit As',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+        if (outputFile != null) {
+          if (!outputFile.toLowerCase().endsWith('.json')) {
+            outputFile += '.json';
+          }
+          await File(outputFile).writeAsString(content);
+          return outputFile;
+        }
+      } catch (e2) {
+        print("Fallback Save As failed: $e2");
+      }
     }
     return null;
   }

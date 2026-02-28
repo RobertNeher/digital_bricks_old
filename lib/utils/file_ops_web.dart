@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:js_util' as js_util;
 
 import 'package:file_picker/file_picker.dart';
 
@@ -11,17 +12,62 @@ class FileOpsImpl {
   }
 
   static Future<String?> saveFile(String content, String fileName) async {
-    // Directly use the fallback/download method
+    // 1. Try File System Access API (Modern browsers, Secure Context)
+    try {
+      if (js_util.hasProperty(html.window, 'showSaveFilePicker')) {
+        final options = js_util.jsify({
+          'suggestedName': fileName,
+          'types': [
+            {
+              'description': 'JSON Circuit File',
+              'accept': {
+                'application/json': ['.json']
+              }
+            }
+          ]
+        });
+
+        final handle = await js_util.promiseToFuture(
+          js_util.callMethod(html.window, 'showSaveFilePicker', [options]),
+        );
+
+        final writable = await js_util.promiseToFuture(
+          js_util.callMethod(handle, 'createWritable', []),
+        );
+
+        await js_util.promiseToFuture(
+          js_util.callMethod(writable, 'write', [content]),
+        );
+
+        await js_util.promiseToFuture(
+          js_util.callMethod(writable, 'close', []),
+        );
+
+        return js_util.hasProperty(handle, 'name')
+            ? js_util.getProperty(handle, 'name')
+            : fileName;
+      }
+    } catch (e) {
+      print("File System Access API failed or cancelled: $e");
+      if (e.toString().contains('AbortError') || e.toString().contains('User cancelled')) {
+        return null; // User explicitly cancelled
+      }
+    }
+
+    // 2. Fallback to direct download
     return _doDownload(content, fileName);
   }
 
   static Future<String?> _doDownload(String content, String fileName) async {
-    final bytes = utf8.encode(content);
-    final blob = html.Blob([bytes]);
+    final blob = html.Blob([content], 'application/json');
     final url = html.Url.createObjectUrlFromBlob(blob);
-    html.AnchorElement(href: url)
-      ..setAttribute("download", fileName)
-      ..click();
+    final anchor = html.AnchorElement()
+      ..href = url
+      ..download = fileName
+      ..style.display = 'none';
+    html.document.body?.append(anchor);
+    anchor.click();
+    anchor.remove();
     html.Url.revokeObjectUrl(url);
     return fileName;
   }

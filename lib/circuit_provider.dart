@@ -23,6 +23,7 @@ class CircuitProvider extends ChangeNotifier {
   Timer? _simulationTimer;
   String circuitSessionId = const Uuid().v4();
   String? currentFilePath;
+  String get pathSeparator => FileOps.pathSeparator;
 
   // Callback to get current viewport center from UI
   Offset Function()? getViewportCenter;
@@ -341,10 +342,15 @@ class CircuitProvider extends ChangeNotifier {
         dialogTitle: 'Save Circuit As',
         fileName: 'circuit.json',
         initialDirectory: initialDir,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
       );
       debugPrint("saveCircuitAs: dialog returned: $outputFile");
 
       if (outputFile != null) {
+        if (!outputFile.toLowerCase().endsWith('.json')) {
+          outputFile += '.json';
+        }
         currentFilePath = outputFile;
         await saveCircuitToPath(outputFile);
       } else {
@@ -352,8 +358,24 @@ class CircuitProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("saveCircuitAs: ERROR: $e");
-      // Fallback: try without initialDirectory if it failed?
-      // But we can't retry easily inside the same flow without user action usually.
+      // Fallback: try without initialDirectory
+      try {
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Circuit As',
+          fileName: 'circuit.json',
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+        if (outputFile != null) {
+          if (!outputFile.toLowerCase().endsWith('.json')) {
+            outputFile += '.json';
+          }
+          currentFilePath = outputFile;
+          await saveCircuitToPath(outputFile);
+        }
+      } catch (e2) {
+        debugPrint("saveCircuitAs: Fallback failed: $e2");
+      }
     }
   }
 
