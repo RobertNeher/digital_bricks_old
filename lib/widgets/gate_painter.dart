@@ -84,13 +84,6 @@ class GatePainter extends CustomPainter {
       case ComponentType.markdownText:
         _drawBox(path, size);
         break;
-      case ComponentType.custom:
-        // Handled by ComponentWidget specifically with a Container
-        // We leave path empty or maybe draw a box border here?
-        // Let's draw a box border to be safe
-        // _drawBox(path, size);
-        // Actually, ComponentWidget uses a Container with border.
-        break;
     }
 
     canvas.drawPath(path, paint);

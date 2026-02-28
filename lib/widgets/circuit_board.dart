@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../circuit_provider.dart';
 import '../models/logic_component.dart'; // Needed for type
 import '../models/connection.dart';
-import '../models/saved_circuit.dart';
 import 'component_widget.dart';
 import 'wire_painter.dart';
 import 'grid_painter.dart';
@@ -243,12 +242,6 @@ class _CircuitBoardState extends State<CircuitBoard> {
                             onPressed: () =>
                                 provider.alignSelectedComponents('top'),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.save),
-                            tooltip: "Save as Blueprint",
-                            onPressed: () =>
-                                _showSaveBlueprintDialog(context, provider),
-                          ),
                           const SizedBox(width: 8),
                           Container(width: 1, height: 24, color: Colors.grey),
                           const SizedBox(width: 8),
@@ -394,11 +387,6 @@ class _CircuitBoardState extends State<CircuitBoard> {
             context,
             listen: false,
           ).addComponentByType(data, Offset(snapX, snapY));
-        } else if (data is SavedCircuit) {
-          Provider.of<CircuitProvider>(
-            context,
-            listen: false,
-          ).instantiateCustomCircuit(data, Offset(snapX, snapY));
         }
       } catch (e, stack) {
         debugPrint('Error dropping component: $e\n$stack');
@@ -410,38 +398,6 @@ class _CircuitBoardState extends State<CircuitBoard> {
         );
       }
     }
-  }
-
-  void _showSaveBlueprintDialog(
-    BuildContext context,
-    CircuitProvider provider,
-  ) {
-    TextEditingController controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Save Custom Blueprint"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: "Blueprint Name"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                provider.saveSelectionAsCustom(controller.text);
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
   }
 }
 

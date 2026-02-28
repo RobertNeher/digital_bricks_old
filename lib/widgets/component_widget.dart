@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../circuit_provider.dart';
 import '../utils/component_layout.dart';
 import '../models/logic_component.dart';
 import '../models/gates.dart';
 import '../models/io_devices.dart';
 import '../models/circuit_io.dart';
-import '../models/integrated_circuit.dart';
-import '../circuit_provider.dart';
 import 'gate_painter.dart';
-import 'ic_painter.dart';
 import 'color_picker_dialog.dart';
 import 'pin_widget.dart';
 import 'segment_display_painter.dart';
@@ -56,22 +54,7 @@ class ComponentWidget extends StatelessWidget {
                   children: component.inputs.asMap().entries.map((entry) {
                     int idx = entry.key;
                     Widget pw = PinWidget(pin: entry.value);
-                    if (component is IntegratedCircuit) {
-                      var ic = component as IntegratedCircuit;
-                      String label = (idx < ic.blueprint.inputLabels.length)
-                          ? ic.blueprint.inputLabels[idx]
-                          : "";
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          pw,
-                          if (label.isNotEmpty) ...[
-                            const SizedBox(width: 4),
-                            Text(label, style: const TextStyle(fontSize: 10)),
-                          ],
-                        ],
-                      );
-                    } else if (component is SegmentDisplay) {
+                    if (component is SegmentDisplay) {
                       String label = (component.inputs.length - 1 - idx)
                           .toString();
                       return Row(
@@ -165,35 +148,6 @@ class ComponentWidget extends StatelessWidget {
                                   size: 32,
                                 ),
                               )
-                            else if (component is IntegratedCircuit)
-                              Stack(
-                                children: [
-                                  Center(
-                                    child: CustomPaint(
-                                      size: Size(
-                                        meta.bodyWidth - 8,
-                                        meta.totalHeight - 8,
-                                      ),
-                                      painter: ICPainter(
-                                        (component as IntegratedCircuit)
-                                            .internalComponents,
-                                        component.inputs,
-                                        component.outputs,
-                                      ),
-                                    ),
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      component.name,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
                             else if (component is MarkdownComponent)
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -285,23 +239,11 @@ class ComponentWidget extends StatelessWidget {
                   children: component.outputs.asMap().entries.map((entry) {
                     int idx = entry.key;
                     Widget pw = PinWidget(pin: entry.value);
-                    if (component is IntegratedCircuit) {
-                      var ic = component as IntegratedCircuit;
-                      String label = (idx < ic.blueprint.outputLabels.length)
-                          ? ic.blueprint.outputLabels[idx]
-                          : "";
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (label.isNotEmpty) ...[
-                            Text(label, style: const TextStyle(fontSize: 10)),
-                            const SizedBox(width: 4),
-                          ],
-                          pw,
-                        ],
-                      );
-                    }
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [pw],
+                    );
                     return pw;
                   }).toList(),
                 ),
@@ -459,34 +401,6 @@ class ComponentWidget extends StatelessWidget {
                 },
               ),
             ],
-            if (component is IntegratedCircuit)
-              ListTile(
-                leading: const Icon(Icons.open_in_full),
-                title: const Text('Unpack Circuit'),
-                onTap: () {
-                  Provider.of<CircuitProvider>(
-                    context,
-                    listen: false,
-                  ).unpackIntegratedCircuit(component as IntegratedCircuit);
-                  Navigator.pop(ctx);
-                },
-              ),
-            if (component.icGroupId != null &&
-                component.icBlueprintName != null)
-              ListTile(
-                leading: const Icon(Icons.compress),
-                title: Text('Repack ${component.icBlueprintName}'),
-                onTap: () {
-                  Provider.of<CircuitProvider>(
-                    context,
-                    listen: false,
-                  ).repackIntegratedCircuit(
-                    component.icGroupId!,
-                    component.icBlueprintName!,
-                  );
-                  Navigator.pop(ctx);
-                },
-              ),
             if (component is CircuitInput ||
                 component is CircuitOutput ||
                 component is ButtonComponent)

@@ -19,7 +19,6 @@ enum ComponentType {
   rsFlipFlop,
   circuitInput,
   circuitOutput,
-  custom, // Integrated Circuit
   button,
   jkFlipFlop,
   markdownText,
@@ -32,10 +31,6 @@ abstract class LogicComponent {
   ComponentType type;
   List<Pin> inputs = [];
   List<Pin> outputs = [];
-
-  // For Unpack/Repack tracking
-  String? icGroupId;
-  String? icBlueprintName;
 
   // Base constructor
   LogicComponent({

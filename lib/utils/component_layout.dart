@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/logic_component.dart';
 import '../models/io_devices.dart';
-import '../models/integrated_circuit.dart';
 import '../models/markdown_component.dart';
 
 class ComponentLayoutMetadata {
@@ -72,19 +71,7 @@ class ComponentLayout {
     double inputColWidth = pinSize;
     double outputColWidth = pinSize;
 
-    if (component is IntegratedCircuit) {
-      double maxInL = 0;
-      double maxOutL = 0;
-      const double charW = 7.0; // Consistent with ComponentWidget
-      for (var l in component.blueprint.inputLabels) {
-        if (l.length * charW > maxInL) maxInL = l.length * charW;
-      }
-      for (var l in component.blueprint.outputLabels) {
-        if (l.length * charW > maxOutL) maxOutL = l.length * charW;
-      }
-      inputColWidth += maxInL + 4;
-      outputColWidth += maxOutL + 4;
-    } else if (component is SegmentDisplay) {
+    if (component is SegmentDisplay) {
       inputColWidth += 24.0;
     }
 
