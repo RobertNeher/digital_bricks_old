@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -14,6 +13,7 @@ import 'models/memory.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
 import 'models/circuit_io.dart';
+import 'models/integrated_circuit.dart';
 import 'utils/file_ops.dart';
 
 class CircuitProvider extends ChangeNotifier {
@@ -24,6 +24,10 @@ class CircuitProvider extends ChangeNotifier {
   String circuitSessionId = const Uuid().v4();
   String? currentFilePath;
   String get pathSeparator => FileOps.pathSeparator;
+
+  bool get hasUnpackedComponents => components.any(
+    (c) => c is IntegratedCircuit && c.isUnpacked,
+  );
 
   // Callback to get current viewport center from UI
   Offset Function()? getViewportCenter;
@@ -129,22 +133,24 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void removeComponent(String id) {
+    _removeComponentInternal(id);
+    notifyListeners();
+  }
+
+  void _removeComponentInternal(String id) {
     components.removeWhere((c) => c.id == id);
+    selectedComponentIds.remove(id);
 
     // Find connections attached to this component
-    List<String> connectionsToRemove = [];
-    for (var conn in connections) {
-      if (conn.sourcePinId.startsWith(id) || conn.targetPinId.startsWith(id)) {
-        connectionsToRemove.add(conn.id);
-      }
-    }
+    List<Connection> connectionsToRemove = connections
+        .where((conn) =>
+            conn.sourcePinId.startsWith(id) || conn.targetPinId.startsWith(id))
+        .toList();
 
     // Remove them one by one to trigger pin reset logic
-    for (var connId in connectionsToRemove) {
-      removeConnection(connId);
+    for (var conn in connectionsToRemove) {
+      _removeConnectionInternal(conn.id);
     }
-
-    notifyListeners();
   }
 
   void addConnection(String sourcePinId, String targetPinId) {
@@ -161,9 +167,13 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void removeConnection(String connectionId) {
+    _removeConnectionInternal(connectionId);
+    notifyListeners();
+  }
+
+  void _removeConnectionInternal(String connectionId) {
     int index = connections.indexWhere((c) => c.id == connectionId);
     if (index != -1) {
-      // Logic to reset the target pin to false (floating input = low)
       var conn = connections[index];
       var targetPin = _findPin(conn.targetPinId);
       if (targetPin != null) {
@@ -247,6 +257,54 @@ class CircuitProvider extends ChangeNotifier {
     }
     selectedComponentIds.clear();
     notifyListeners();
+  }
+
+  void repackSelectedComponents() {
+    if (selectedComponentIds.isEmpty) return;
+
+    final selectedComps = components
+        .where((c) => selectedComponentIds.contains(c.id))
+        .toList();
+
+    // 1. Identify internal connections
+    final internalConns = connections.where((conn) {
+      bool sourceInside =
+          selectedComps.any((c) => conn.sourcePinId.startsWith(c.id));
+      bool targetInside =
+          selectedComps.any((c) => conn.targetPinId.startsWith(c.id));
+      return sourceInside && targetInside;
+    }).toList();
+
+    // 2. Calculate top-left for the new IC
+    double minX = double.infinity;
+    double minY = double.infinity;
+    for (var c in selectedComps) {
+      if (c.position.dx < minX) minX = c.position.dx;
+      if (c.position.dy < minY) minY = c.position.dy;
+    }
+
+    if (minX == double.infinity) return;
+    final icPos = Offset(minX, minY);
+
+    // 3. Create the IC
+    final ic = IntegratedCircuit(
+      name: "Repacked Circuit",
+      position: icPos,
+      internalComponents: List.from(selectedComps),
+      internalConnections: List.from(internalConns),
+    );
+
+    // 4. Remove internal components and their connections from main board
+    // Note: removeComponent will remove their external connections too.
+    for (var comp in selectedComps) {
+      removeComponent(comp.id);
+    }
+
+    // 5. Add the new IC
+    addComponent(ic);
+
+    // 6. Clear selection
+    clearSelection();
   }
 
   void clearCircuit() {
@@ -458,13 +516,105 @@ class CircuitProvider extends ChangeNotifier {
   Future<void> loadCircuit({Offset? position}) async {
     final result = await pickAndReadCircuit();
     if (result != null) {
-      applyCircuitData(
-        result.data,
-        clearCanvas: true,
-        name: result.name,
-        position: position,
-      );
+      // By default, we pack loaded circuits into an IntegratedCircuit component.
+      packCircuit(result.data, result.name, position: position);
     }
+  }
+
+  void packCircuit(Map<String, dynamic> data, String name, {Offset? position}) {
+    final pos = position ?? (getViewportCenter?.call() ?? Offset.zero);
+    final List<dynamic> internalCompsJson = data['components'] ?? [];
+    final List<dynamic> internalConnsJson = data['connections'] ?? [];
+
+    final internalComps = internalCompsJson
+        .map((e) => _deserializeComponent(e as Map<String, dynamic>))
+        .whereType<LogicComponent>()
+        .toList();
+    final internalConns = internalConnsJson
+        .map((e) => Connection.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final ic = IntegratedCircuit(
+      name: name,
+      position: pos,
+      internalComponents: internalComps,
+      internalConnections: internalConns,
+    );
+
+    addComponent(ic);
+  }
+
+  void unpackIntegratedCircuit(String id) {
+    final index = components.indexWhere((c) => c.id == id);
+    if (index == -1) return;
+    
+    final comp = components[index];
+    if (comp is! IntegratedCircuit) return;
+    
+    final ic = comp;
+    
+    // 1. Mark the IC as unpacked
+    ic.isUnpacked = true;
+    if (!ic.name.contains("(unpacked)")) {
+      ic.name += " (unpacked)";
+    }
+    
+    // Clear selection so the IC isn't selected while unpacking
+    clearSelection();
+
+    // 2. Add internal components back to the main board
+    // Calculate the top-left of the internal components to offset them to the IC's position
+    double minX = double.infinity;
+    double minY = double.infinity;
+    for (var c in ic.internalComponents) {
+      if (c.position.dx < minX) minX = c.position.dx;
+      if (c.position.dy < minY) minY = c.position.dy;
+    }
+    
+    // Fallback if no components
+    if (minX == double.infinity) {
+      minX = 0;
+      minY = 0;
+    }
+
+    final Offset offset = ic.position - Offset(minX, minY);
+
+    for (var internalComp in ic.internalComponents) {
+      internalComp.position += offset;
+      components.add(internalComp); // Use direct add to avoid redundant notifications
+    }
+    
+    for (var internalConn in ic.internalConnections) {
+      connections.add(internalConn);
+    }
+
+    notifyListeners();
+  }
+
+  void repackExistingIC(String id) {
+    final index = components.indexWhere((c) => c.id == id);
+    if (index == -1) return;
+
+    final comp = components[index];
+    if (comp is! IntegratedCircuit || !comp.isUnpacked) return;
+
+    final ic = comp;
+
+    // 1. Remove internal components and their connections from the board
+    final internalIds = ic.internalComponents.map((c) => c.id).toList();
+    for (var childId in internalIds) {
+      _removeComponentInternal(childId);
+    }
+
+    // Also remove any internal connections that were added to the board
+    final connIds = ic.internalConnections.map((c) => c.id).toList();
+    connections.removeWhere((conn) => connIds.contains(conn.id));
+
+    // 2. Restore IC state
+    ic.isUnpacked = false;
+    ic.name = ic.name.replaceAll(" (unpacked)", "");
+
+    notifyListeners();
   }
 
   LogicComponent? _deserializeComponent(Map<String, dynamic> json) {
@@ -576,6 +726,25 @@ class CircuitProvider extends ChangeNotifier {
           (comp as ButtonComponent).label = json['label'];
         }
         break;
+      case ComponentType.integratedCircuit:
+        final internalCompsJson = json['internalComponents'] as List;
+        final internalConnsJson = json['internalConnections'] as List;
+        final internalComps = internalCompsJson
+            .map((e) => _deserializeComponent(e as Map<String, dynamic>))
+            .whereType<LogicComponent>()
+            .toList();
+        final internalConns = internalConnsJson
+            .map((e) => Connection.fromJson(e as Map<String, dynamic>))
+            .toList();
+        comp = IntegratedCircuit(
+          id: id,
+          name: json['name'] ?? "IC",
+          position: pos,
+          internalComponents: internalComps,
+          internalConnections: internalConns,
+        );
+        (comp as IntegratedCircuit).isUnpacked = json['isUnpacked'] ?? false;
+        break;
       case ComponentType.markdownText:
         comp = MarkdownComponent(
           id: id,
@@ -649,9 +818,14 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.markdownText:
         comp = MarkdownComponent(id: id, position: pos);
         break;
+      case ComponentType.integratedCircuit:
+        // ICs are usually added via 'packing' or 'loading', 
+        // but we need the case for switch exhaustiveness.
+        break;
     }
-
-    addComponent(comp);
+    if (comp != null) {
+      addComponent(comp);
+    }
   }
 
   void refresh() {

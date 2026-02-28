@@ -22,6 +22,7 @@ enum ComponentType {
   button,
   jkFlipFlop,
   markdownText,
+  integratedCircuit,
 }
 
 abstract class LogicComponent {

@@ -93,7 +93,8 @@ class MainScreen extends StatelessWidget {
 
               // If canvas is empty, just load directly
               if (provider.components.isEmpty) {
-                provider.applyCircuitData(data, clearCanvas: true, name: name);
+                provider.clearCircuit();
+                provider.packCircuit(data, name);
                 return;
               }
 
@@ -108,22 +109,15 @@ class MainScreen extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        provider.applyCircuitData(
-                          data,
-                          clearCanvas: true,
-                          name: name,
-                        );
+                        provider.clearCircuit();
+                        provider.packCircuit(data, name);
                       },
                       child: const Text("Clear Canvas"),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        provider.applyCircuitData(
-                          data,
-                          clearCanvas: false,
-                          name: name,
-                        );
+                        provider.packCircuit(data, name);
                       },
                       child: const Text("Append"),
                     ),

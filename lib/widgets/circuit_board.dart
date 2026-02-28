@@ -246,6 +246,18 @@ class _CircuitBoardState extends State<CircuitBoard> {
                           Container(width: 1, height: 24, color: Colors.grey),
                           const SizedBox(width: 8),
                           IconButton(
+                            icon: Icon(
+                              Icons.archive,
+                              color: provider.hasUnpackedComponents
+                                  ? Colors.blue
+                                  : Colors.grey,
+                            ),
+                            tooltip: "Repack Selection",
+                            onPressed: provider.hasUnpackedComponents
+                                ? () => provider.repackSelectedComponents()
+                                : null,
+                          ),
+                          IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             tooltip: "Delete Selected",
                             onPressed: () =>
@@ -280,6 +292,63 @@ class _CircuitBoardState extends State<CircuitBoard> {
         return;
       }
     }
+
+    // Background hit
+    _showCanvasContextMenu(context, localPos, provider);
+  }
+
+  void _showCanvasContextMenu(
+    BuildContext context,
+    Offset localPos,
+    CircuitProvider provider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Wrap(
+          children: [
+            if (provider.selectedComponentIds.isNotEmpty)
+              ListTile(
+                leading: Icon(
+                  Icons.archive,
+                  color: provider.hasUnpackedComponents ? Colors.blue : Colors.grey,
+                ),
+                title: Text(
+                  "Repack Selection",
+                  style: TextStyle(
+                    color: provider.hasUnpackedComponents ? null : Colors.grey,
+                  ),
+                ),
+                enabled: provider.hasUnpackedComponents,
+                onTap: provider.hasUnpackedComponents
+                    ? () {
+                        provider.repackSelectedComponents();
+                        Navigator.pop(ctx);
+                      }
+                    : null,
+              ),
+            ListTile(
+              leading: const Icon(Icons.select_all),
+              title: const Text("Select All"),
+              onTap: () {
+                provider.selectAll();
+                Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.layers_clear),
+              title: const Text("Clear Canvas"),
+              onTap: () {
+                Navigator.pop(ctx);
+                // Trigger the refresh-style clearing with confirmation?
+                // For now just call clear.
+                provider.clearCircuit();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   bool _isWireHit(

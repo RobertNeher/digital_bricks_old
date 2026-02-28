@@ -10,6 +10,8 @@ import 'gate_painter.dart';
 import 'color_picker_dialog.dart';
 import 'pin_widget.dart';
 import 'segment_display_painter.dart';
+import 'ic_painter.dart';
+import '../models/integrated_circuit.dart';
 import '../models/markdown_component.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -32,6 +34,7 @@ class ComponentWidget extends StatelessWidget {
     return Container(
       width: meta.totalWidth,
       height: meta.totalHeight,
+      padding: const EdgeInsets.all(4),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -50,30 +53,39 @@ class ComponentWidget extends StatelessWidget {
                 width: meta.inputColWidth,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: component.inputs.asMap().entries.map((entry) {
-                    int idx = entry.key;
-                    Widget pw = PinWidget(pin: entry.value);
-                    if (component is SegmentDisplay) {
-                      String label = (component.inputs.length - 1 - idx)
-                          .toString();
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          pw,
-                          const SizedBox(width: 4),
-                          Text(
-                            label,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    return pw;
-                  }).toList(),
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: (component is IntegratedCircuit &&
+                          (component as IntegratedCircuit).isUnpacked)
+                      ? []
+                      : component.inputs.asMap().entries.map((entry) {
+                          int idx = entry.key;
+                          Widget pw = PinWidget(pin: entry.value);
+                          String? label;
+                          if (component is SegmentDisplay) {
+                            label = (component.inputs.length - 1 - idx).toString();
+                          } else {
+                            label = entry.value.label;
+                          }
+
+                          if (label != null) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  label,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                pw,
+                              ],
+                            );
+                          }
+                          return pw;
+                        }).toList(),
                 ),
               ),
 
@@ -146,6 +158,33 @@ class ComponentWidget extends StatelessWidget {
                                       ? Color((component as Led).colorHigh)
                                       : Color((component as Led).colorLow),
                                   size: 32,
+                                ),
+                              )
+                            else if (component is IntegratedCircuit)
+                              Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Opacity(
+                                      opacity: (component as IntegratedCircuit).isUnpacked ? 0.3 : 1.0,
+                                      child: CustomPaint(
+                                        painter: ICPainter(component as IntegratedCircuit),
+                                        size: Size(meta.bodyWidth, meta.bodyHeight),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Text(
+                                        component.name,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               )
                             else if (component is MarkdownComponent)
@@ -235,16 +274,29 @@ class ComponentWidget extends StatelessWidget {
                 width: meta.outputColWidth,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: component.outputs.asMap().entries.map((entry) {
-                    int idx = entry.key;
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: (component is IntegratedCircuit && (component as IntegratedCircuit).isUnpacked)
+                    ? []
+                    : component.outputs.asMap().entries.map((entry) {
                     Widget pw = PinWidget(pin: entry.value);
                     return Row(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [pw],
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        pw,
+                        if (entry.value.label != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text(
+                              entry.value.label!,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     );
-                    return pw;
                   }).toList(),
                 ),
               ),
@@ -412,6 +464,31 @@ class ComponentWidget extends StatelessWidget {
                   _showLabelDialog(context, component);
                 },
               ),
+            if (component is IntegratedCircuit)
+              if ((component as IntegratedCircuit).isUnpacked)
+                ListTile(
+                  leading: const Icon(Icons.archive),
+                  title: const Text('Repack'),
+                  onTap: () {
+                    Provider.of<CircuitProvider>(
+                      context,
+                      listen: false,
+                    ).repackExistingIC(component.id);
+                    Navigator.pop(ctx);
+                  },
+                )
+              else
+                ListTile(
+                  leading: const Icon(Icons.unarchive),
+                  title: const Text('Unpack'),
+                  onTap: () {
+                    Provider.of<CircuitProvider>(
+                      context,
+                      listen: false,
+                    ).unpackIntegratedCircuit(component.id);
+                    Navigator.pop(ctx);
+                  },
+                ),
           ],
         );
       },

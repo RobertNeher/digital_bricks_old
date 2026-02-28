@@ -1,25 +1,54 @@
 import 'package:flutter/material.dart';
-import '../models/logic_component.dart';
-import '../models/pin.dart';
+import '../models/integrated_circuit.dart';
 import 'gate_painter.dart';
 
 class ICPainter extends CustomPainter {
-  final List<LogicComponent> components;
-  final List<Pin> inputs;
-  final List<Pin> outputs;
+  final IntegratedCircuit ic;
 
-  ICPainter(this.components, this.inputs, this.outputs);
+  ICPainter(this.ic);
 
   @override
   void paint(Canvas canvas, Size size) {
     // Draw surrounding box
     final borderPaint = Paint()
-      ..color = Colors.black
+      ..color = ic.isUnpacked ? Colors.grey : Colors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), borderPaint);
 
-    if (components.isEmpty) return;
+    if (ic.isUnpacked) {
+      // Draw dashed rectangle
+      const double dashWidth = 5.0;
+      const double dashSpace = 5.0;
+      double startX = 0;
+      double startY = 0;
+
+      // Top
+      while (startX < size.width) {
+        canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), borderPaint);
+        startX += dashWidth + dashSpace;
+      }
+      // Right
+      while (startY < size.height) {
+        canvas.drawLine(Offset(size.width, startY), Offset(size.width, startY + dashWidth), borderPaint);
+        startY += dashWidth + dashSpace;
+      }
+      // Bottom
+      startX = size.width;
+      while (startX > 0) {
+        canvas.drawLine(Offset(startX, size.height), Offset(startX - dashWidth, size.height), borderPaint);
+        startX -= (dashWidth + dashSpace);
+      }
+      // Left
+      startY = size.height;
+      while (startY > 0) {
+        canvas.drawLine(Offset(0, startY), Offset(0, startY - dashWidth), borderPaint);
+        startY -= (dashWidth + dashSpace);
+      }
+    } else {
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), borderPaint);
+    }
+
+    if (ic.internalComponents.isEmpty) return;
 
     // 1. Calculate Bounding Box of internals
     double minX = double.infinity;
@@ -27,7 +56,7 @@ class ICPainter extends CustomPainter {
     double maxX = double.negativeInfinity;
     double maxY = double.negativeInfinity;
 
-    for (var c in components) {
+    for (var c in ic.internalComponents) {
       if (c.position.dx < minX) minX = c.position.dx;
       if (c.position.dy < minY) minY = c.position.dy;
       // Assume approx size 50x50 for bounds calculation
@@ -63,7 +92,7 @@ class ICPainter extends CustomPainter {
     canvas.scale(scale);
     canvas.translate(-minX, -minY); // Normalize to 0,0
 
-    for (var c in components) {
+    for (var c in ic.internalComponents) {
       canvas.save();
       canvas.translate(c.position.dx, c.position.dy);
 

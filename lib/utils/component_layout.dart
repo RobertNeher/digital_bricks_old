@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/logic_component.dart';
 import '../models/io_devices.dart';
+import '../models/integrated_circuit.dart';
 import '../models/markdown_component.dart';
 
 class ComponentLayoutMetadata {
@@ -8,6 +9,7 @@ class ComponentLayoutMetadata {
   final double totalHeight;
   final double inputColWidth;
   final double bodyWidth;
+  final double bodyHeight;
   final double outputColWidth;
 
   ComponentLayoutMetadata({
@@ -15,6 +17,7 @@ class ComponentLayoutMetadata {
     required this.totalHeight,
     required this.inputColWidth,
     required this.bodyWidth,
+    required this.bodyHeight,
     required this.outputColWidth,
   });
 
@@ -58,6 +61,9 @@ class ComponentLayout {
       textPainter.layout(maxWidth: bodyWidth - 24);
       double multiplier = component.text.contains('|') ? 4.0 : 2.0;
       bodyHeight = (textPainter.height * multiplier) + 80.0;
+    } else if (component is IntegratedCircuit) {
+      bodyWidth = 120.0;
+      // Height is already handled by maxPins logic
     } else if (component is SegmentDisplay) {
       double fontH = component.fontSize;
       if (fontH < 30) fontH = 30;
@@ -68,20 +74,23 @@ class ComponentLayout {
     }
 
     // 2. Calculate Column Widths (Pins + Labels)
-    double inputColWidth = pinSize;
-    double outputColWidth = pinSize;
+    bool anyInputLabel = component.inputs.any((p) => p.label != null);
+    if (component is SegmentDisplay) anyInputLabel = true;
 
-    if (component is SegmentDisplay) {
-      inputColWidth += 24.0;
-    }
+    bool anyOutputLabel = component.outputs.any((p) => p.label != null);
 
-    double totalWidth = inputColWidth + bodyWidth + outputColWidth;
+    double inputColWidth = pinSize + (anyInputLabel ? 48.0 : 0);
+    double outputColWidth = pinSize + (anyOutputLabel ? 48.0 : 0);
+ 
+    double totalWidth = inputColWidth + bodyWidth + outputColWidth + 8.0; // +8 for 4px horizontal padding
+    double totalHeight = bodyHeight + 8.0; // +8 for 4px vertical padding
 
     return ComponentLayoutMetadata(
       totalWidth: totalWidth,
-      totalHeight: bodyHeight,
+      totalHeight: totalHeight,
       inputColWidth: inputColWidth,
       bodyWidth: bodyWidth,
+      bodyHeight: bodyHeight,
       outputColWidth: outputColWidth,
     );
   }
@@ -98,11 +107,11 @@ class ComponentLayout {
     final meta = getLayoutMetadata(component);
 
     // X position: Center of PinWidget (24x24)
-    // For Inputs: Far left of inputColumn, Pin is first.
-    // For Outputs: Far right of outputColumn, Pin is last.
+    // Pins are now inner-aligned: adjacent to the body.
+    // Account for 4.0 padding from Container
     double centerX = isInput
-        ? (pinSize / 2)
-        : (meta.totalWidth - (pinSize / 2));
+        ? (4.0 + meta.inputColWidth - (pinSize / 2))
+        : (4.0 + meta.inputColWidth + meta.bodyWidth + (pinSize / 2));
 
     // Y position: spaceEvenly Column
     int count = isInput ? component.inputs.length : component.outputs.length;

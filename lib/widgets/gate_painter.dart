@@ -84,6 +84,9 @@ class GatePainter extends CustomPainter {
       case ComponentType.markdownText:
         _drawBox(path, size);
         break;
+      case ComponentType.integratedCircuit:
+        _drawBox(path, size);
+        break;
     }
 
     canvas.drawPath(path, paint);
