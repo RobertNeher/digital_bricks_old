@@ -110,6 +110,15 @@ class ComponentWidget extends StatelessWidget {
                                 listen: false,
                               ).toggleComponentSelection(component.id);
                             },
+                      onDoubleTap: (component is MarkdownComponent)
+                          ? () {
+                              (component as MarkdownComponent).isEditing = true;
+                              Provider.of<CircuitProvider>(
+                                context,
+                                listen: false,
+                              ).refresh();
+                            }
+                          : null,
                       onPanUpdate:
                           (component is MarkdownComponent &&
                               (component as MarkdownComponent).isEditing)
@@ -462,6 +471,19 @@ class ComponentWidget extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(ctx);
                   _showLabelDialog(context, component);
+                },
+              ),
+            if (component is MarkdownComponent)
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Text'),
+                onTap: () {
+                  (component as MarkdownComponent).isEditing = true;
+                  Provider.of<CircuitProvider>(
+                    context,
+                    listen: false,
+                  ).refresh();
+                  Navigator.pop(ctx);
                 },
               ),
             if (component is IntegratedCircuit)
