@@ -1,6 +1,6 @@
 {
-    "name": "Digital Bricks",
-    "short_name": "Digital Bricks",
+    "name": "digital_bricks",
+    "short_name": "digital_bricks",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

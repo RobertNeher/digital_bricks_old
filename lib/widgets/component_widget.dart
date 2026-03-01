@@ -54,7 +54,8 @@ class ComponentWidget extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: (component is IntegratedCircuit &&
+                  children:
+                      (component is IntegratedCircuit &&
                           (component as IntegratedCircuit).isUnpacked)
                       ? []
                       : component.inputs.asMap().entries.map((entry) {
@@ -62,7 +63,8 @@ class ComponentWidget extends StatelessWidget {
                           Widget pw = PinWidget(pin: entry.value);
                           String? label;
                           if (component is SegmentDisplay) {
-                            label = (component.inputs.length - 1 - idx).toString();
+                            label = (component.inputs.length - 1 - idx)
+                                .toString();
                           } else {
                             label = entry.value.label;
                           }
@@ -175,10 +177,19 @@ class ComponentWidget extends StatelessWidget {
                                   alignment: Alignment.center,
                                   children: [
                                     Opacity(
-                                      opacity: (component as IntegratedCircuit).isUnpacked ? 0.3 : 1.0,
+                                      opacity:
+                                          (component as IntegratedCircuit)
+                                              .isUnpacked
+                                          ? 0.3
+                                          : 1.0,
                                       child: CustomPaint(
-                                        painter: ICPainter(component as IntegratedCircuit),
-                                        size: Size(meta.bodyWidth, meta.bodyHeight),
+                                        painter: ICPainter(
+                                          component as IntegratedCircuit,
+                                        ),
+                                        size: Size(
+                                          meta.bodyWidth,
+                                          meta.bodyHeight,
+                                        ),
                                       ),
                                     ),
                                     Padding(
@@ -284,29 +295,31 @@ class ComponentWidget extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: (component is IntegratedCircuit && (component as IntegratedCircuit).isUnpacked)
-                    ? []
-                    : component.outputs.asMap().entries.map((entry) {
-                    Widget pw = PinWidget(pin: entry.value);
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        pw,
-                        if (entry.value.label != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Text(
-                              entry.value.label!,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  }).toList(),
+                  children:
+                      (component is IntegratedCircuit &&
+                          (component as IntegratedCircuit).isUnpacked)
+                      ? []
+                      : component.outputs.asMap().entries.map((entry) {
+                          Widget pw = PinWidget(pin: entry.value);
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              pw,
+                              if (entry.value.label != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Text(
+                                    entry.value.label!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        }).toList(),
                 ),
               ),
             ],
@@ -486,7 +499,7 @@ class ComponentWidget extends StatelessWidget {
                   Navigator.pop(ctx);
                 },
               ),
-            if (component is IntegratedCircuit)
+            if (component is IntegratedCircuit) ...[
               if ((component as IntegratedCircuit).isUnpacked)
                 ListTile(
                   leading: const Icon(Icons.archive),
@@ -504,13 +517,48 @@ class ComponentWidget extends StatelessWidget {
                   leading: const Icon(Icons.unarchive),
                   title: const Text('Unpack'),
                   onTap: () {
-                    Provider.of<CircuitProvider>(
+                    final provider = Provider.of<CircuitProvider>(
                       context,
                       listen: false,
-                    ).unpackIntegratedCircuit(component.id);
+                    );
+                    if (provider.hasUnpackedComponents) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Only one circuit can be unpacked on canvas at a time.",
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      provider.unpackIntegratedCircuit(component.id);
+                    }
                     Navigator.pop(ctx);
                   },
                 ),
+            ],
+            Builder(
+              builder: (context) {
+                final parentIC = Provider.of<CircuitProvider>(
+                  context,
+                  listen: false,
+                ).findParentIC(component.id);
+                if (parentIC != null) {
+                  return ListTile(
+                    leading: const Icon(Icons.archive),
+                    title: Text('Repack Parent (${parentIC.name})'),
+                    onTap: () {
+                      Provider.of<CircuitProvider>(
+                        context,
+                        listen: false,
+                      ).repackExistingIC(parentIC.id);
+                      Navigator.of(context).pop();
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         );
       },

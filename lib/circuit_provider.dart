@@ -25,9 +25,8 @@ class CircuitProvider extends ChangeNotifier {
   String? currentFilePath;
   String get pathSeparator => FileOps.pathSeparator;
 
-  bool get hasUnpackedComponents => components.any(
-    (c) => c is IntegratedCircuit && c.isUnpacked,
-  );
+  bool get hasUnpackedComponents =>
+      components.any((c) => c is IntegratedCircuit && c.isUnpacked);
 
   // Callback to get current viewport center from UI
   Offset Function()? getViewportCenter;
@@ -143,8 +142,11 @@ class CircuitProvider extends ChangeNotifier {
 
     // Find connections attached to this component
     List<Connection> connectionsToRemove = connections
-        .where((conn) =>
-            conn.sourcePinId.startsWith(id) || conn.targetPinId.startsWith(id))
+        .where(
+          (conn) =>
+              conn.sourcePinId.startsWith(id) ||
+              conn.targetPinId.startsWith(id),
+        )
         .toList();
 
     // Remove them one by one to trigger pin reset logic
@@ -260,7 +262,14 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void repackSelectedComponents() {
-    if (selectedComponentIds.isEmpty) return;
+    // 0. Check if any selected component is a child of an unpacked IC
+    for (var id in selectedComponentIds) {
+      final parent = findParentIC(id);
+      if (parent != null) {
+        repackExistingIC(parent.id);
+        return; // Repacked the existing IC, we're done.
+      }
+    }
 
     final selectedComps = components
         .where((c) => selectedComponentIds.contains(c.id))
@@ -268,10 +277,12 @@ class CircuitProvider extends ChangeNotifier {
 
     // 1. Identify internal connections
     final internalConns = connections.where((conn) {
-      bool sourceInside =
-          selectedComps.any((c) => conn.sourcePinId.startsWith(c.id));
-      bool targetInside =
-          selectedComps.any((c) => conn.targetPinId.startsWith(c.id));
+      bool sourceInside = selectedComps.any(
+        (c) => conn.sourcePinId.startsWith(c.id),
+      );
+      bool targetInside = selectedComps.any(
+        (c) => conn.targetPinId.startsWith(c.id),
+      );
       return sourceInside && targetInside;
     }).toList();
 
@@ -547,18 +558,18 @@ class CircuitProvider extends ChangeNotifier {
   void unpackIntegratedCircuit(String id) {
     final index = components.indexWhere((c) => c.id == id);
     if (index == -1) return;
-    
+
     final comp = components[index];
     if (comp is! IntegratedCircuit) return;
-    
+
     final ic = comp;
-    
+
     // 1. Mark the IC as unpacked
     ic.isUnpacked = true;
     if (!ic.name.contains("(unpacked)")) {
       ic.name += " (unpacked)";
     }
-    
+
     // Clear selection so the IC isn't selected while unpacking
     clearSelection();
 
@@ -570,7 +581,7 @@ class CircuitProvider extends ChangeNotifier {
       if (c.position.dx < minX) minX = c.position.dx;
       if (c.position.dy < minY) minY = c.position.dy;
     }
-    
+
     // Fallback if no components
     if (minX == double.infinity) {
       minX = 0;
@@ -581,9 +592,11 @@ class CircuitProvider extends ChangeNotifier {
 
     for (var internalComp in ic.internalComponents) {
       internalComp.position += offset;
-      components.add(internalComp); // Use direct add to avoid redundant notifications
+      components.add(
+        internalComp,
+      ); // Use direct add to avoid redundant notifications
     }
-    
+
     for (var internalConn in ic.internalConnections) {
       connections.add(internalConn);
     }
@@ -615,6 +628,17 @@ class CircuitProvider extends ChangeNotifier {
     ic.name = ic.name.replaceAll(" (unpacked)", "");
 
     notifyListeners();
+  }
+
+  IntegratedCircuit? findParentIC(String componentId) {
+    for (var c in components) {
+      if (c is IntegratedCircuit && c.isUnpacked) {
+        if (c.internalComponents.any((child) => child.id == componentId)) {
+          return c;
+        }
+      }
+    }
+    return null;
   }
 
   LogicComponent? _deserializeComponent(Map<String, dynamic> json) {
@@ -819,7 +843,7 @@ class CircuitProvider extends ChangeNotifier {
         comp = MarkdownComponent(id: id, position: pos);
         break;
       case ComponentType.integratedCircuit:
-        // ICs are usually added via 'packing' or 'loading', 
+        // ICs are usually added via 'packing' or 'loading',
         // but we need the case for switch exhaustiveness.
         break;
     }
