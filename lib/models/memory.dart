@@ -8,13 +8,19 @@ class DFlipFlop extends LogicComponent {
     : super(name: 'D-FF', type: ComponentType.dFlipFlop) {
     // Inputs: 0: D, 1: Clock, 2: Preset, 3: Clear
     addInputPin(); // D
+    inputs[0].label = 'D';
     addInputPin(); // Clock
+    inputs[1].label = 'Clk';
     addInputPin(); // Preset
+    inputs[2].label = 'Pre';
     addInputPin(); // Clear
+    inputs[3].label = 'Clr';
 
     // Outputs: 0: Q, 1: Q_not
     addOutputPin(); // Q
+    outputs[0].label = 'Q';
     addOutputPin(); // Q_not
+    outputs[1].label = 'Q\u0304';
 
     // Initial state
     outputs[0].value = false;
@@ -68,6 +74,7 @@ class DFlipFlop extends LogicComponent {
 
 class RsFlipFlop extends LogicComponent {
   bool _storedValue = false;
+  bool _lastClock = false;
 
   // Note: We don't have a clock, so we just check state changes or steady state?
   // RS Flip Flop (NOR-based usually):
@@ -78,13 +85,19 @@ class RsFlipFlop extends LogicComponent {
 
   RsFlipFlop({super.id, required super.position})
     : super(name: 'RS-FF', type: ComponentType.rsFlipFlop) {
-    // Inputs: 0: S, 1: R
+    // Inputs: 0: S, 1: R, 2: Clock
     addInputPin(); // S
+    inputs[0].label = 'S';
     addInputPin(); // R
+    inputs[1].label = 'R';
+    addInputPin(); // Clock
+    inputs[2].label = 'Clk';
 
     // Outputs: 0: Q, 1: Q_not
     addOutputPin(); // Q
+    outputs[0].label = 'Q';
     addOutputPin(); // Q_not
+    outputs[1].label = 'Q\u0304'; // Q with overline (Q_not)
 
     // Initial state
     outputs[0].value = false;
@@ -93,29 +106,37 @@ class RsFlipFlop extends LogicComponent {
 
   @override
   void evaluate() {
-    if (inputs.length < 2) return;
+    if (inputs.length < 3) return;
 
     bool s = inputs[0].value;
     bool r = inputs[1].value;
+    bool clk = inputs[2].value;
 
-    if (s && !r) {
-      _storedValue = true;
-    } else if (!s && r) {
-      _storedValue = false;
-    } else if (s && r) {
-      // Invalid state. For NOR latch, both outputs go Low.
-      _storedValue = false;
+    // Synchronous Logic (Rising Edge)
+    if (clk != _lastClock && clk) {
+      if (s && !r) {
+        _storedValue = true;
+      } else if (!s && r) {
+        _storedValue = false;
+      } else if (s && r) {
+        // Invalid state. For NOR latch, both outputs go Low.
+        _storedValue = false;
+      }
+      // Else 0,0 -> Hold
     }
-    // Else 0,0 -> Hold
 
     outputs[0].value = _storedValue;
     outputs[1].value = !_storedValue;
 
-    // Correction for S=1, R=1:
-    if (s && r) {
+    // Correction for S=1, R=1 during steady state invalid condition if needed?
+    // Gated RS FF usually only updates on edge.
+    // If we want it to maintain the invalid state (both low) WHILE S=1,R=1 and edge happens:
+    if (s && r && clk && _lastClock == false) {
       outputs[0].value = false;
       outputs[1].value = false;
     }
+
+    _lastClock = clk;
   }
 
   @override
@@ -140,14 +161,21 @@ class JKFlipFlop extends LogicComponent {
     : super(name: 'JK-FF', type: ComponentType.jkFlipFlop) {
     // Inputs: 0: J, 1: K, 2: Clock, 3: Preset, 4: Clear
     addInputPin(); // J
+    inputs[0].label = 'J';
     addInputPin(); // K
+    inputs[1].label = 'K';
     addInputPin(); // Clock
+    inputs[2].label = 'Clk';
     addInputPin(); // Preset
+    inputs[3].label = 'Pre';
     addInputPin(); // Clear
+    inputs[4].label = 'Clr';
 
     // Outputs: 0: Q, 1: Q_not
     addOutputPin(); // Q
+    outputs[0].label = 'Q';
     addOutputPin(); // Q_not
+    outputs[1].label = 'Q\u0304';
 
     // Initial state
     outputs[0].value = false;
