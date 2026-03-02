@@ -85,13 +85,17 @@ class RsFlipFlop extends LogicComponent {
 
   RsFlipFlop({super.id, required super.position})
     : super(name: 'RS-FF', type: ComponentType.rsFlipFlop) {
-    // Inputs: 0: S, 1: R, 2: Clock
+    // Inputs: 0: S, 1: R, 2: Clock, 3: Preset, 4: Clear
     addInputPin(); // S
     inputs[0].label = 'S';
     addInputPin(); // R
     inputs[1].label = 'R';
     addInputPin(); // Clock
     inputs[2].label = 'Clk';
+    addInputPin(); // Preset
+    inputs[3].label = 'Pre';
+    addInputPin(); // Clear
+    inputs[4].label = 'Clr';
 
     // Outputs: 0: Q, 1: Q_not
     addOutputPin(); // Q
@@ -106,32 +110,39 @@ class RsFlipFlop extends LogicComponent {
 
   @override
   void evaluate() {
-    if (inputs.length < 3) return;
+    if (inputs.length < 5) return;
 
     bool s = inputs[0].value;
     bool r = inputs[1].value;
     bool clk = inputs[2].value;
+    bool pre = inputs[3].value;
+    bool clr = inputs[4].value;
 
-    // Synchronous Logic (Rising Edge)
-    if (clk != _lastClock && clk) {
-      if (s && !r) {
-        _storedValue = true;
-      } else if (!s && r) {
-        _storedValue = false;
-      } else if (s && r) {
-        // Invalid state. For NOR latch, both outputs go Low.
-        _storedValue = false;
+    // Asynchronous Logic (Highest Priority)
+    if (clr) {
+      _storedValue = false;
+    } else if (pre) {
+      _storedValue = true;
+    } else {
+      // Synchronous Logic (Rising Edge)
+      if (clk != _lastClock && clk) {
+        if (s && !r) {
+          _storedValue = true;
+        } else if (!s && r) {
+          _storedValue = false;
+        } else if (s && r) {
+          // Invalid state. For NOR latch, both outputs go Low.
+          _storedValue = false;
+        }
+        // Else 0,0 -> Hold
       }
-      // Else 0,0 -> Hold
     }
 
     outputs[0].value = _storedValue;
     outputs[1].value = !_storedValue;
 
     // Correction for S=1, R=1 during steady state invalid condition if needed?
-    // Gated RS FF usually only updates on edge.
-    // If we want it to maintain the invalid state (both low) WHILE S=1,R=1 and edge happens:
-    if (s && r && clk && _lastClock == false) {
+    if (!clr && !pre && s && r && clk && _lastClock == false) {
       outputs[0].value = false;
       outputs[1].value = false;
     }
