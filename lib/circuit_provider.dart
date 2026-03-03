@@ -678,6 +678,7 @@ class CircuitProvider extends ChangeNotifier {
           position: pos,
           colorHigh: json['colorHigh'] ?? 0xFFFF0000,
           colorLow: json['colorLow'] ?? 0xFF550000,
+          label: json['label'] ?? "",
         );
         break;
       case ComponentType.segment7:

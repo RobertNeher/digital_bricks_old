@@ -161,14 +161,32 @@ class ComponentWidget extends StatelessWidget {
                               )
                             else if (component is Led)
                               Center(
-                                child: Icon(
-                                  Icons.lightbulb,
-                                  color:
-                                      ((component as Led).inputs.isNotEmpty &&
-                                          (component as Led).inputs[0].value)
-                                      ? Color((component as Led).colorHigh)
-                                      : Color((component as Led).colorLow),
-                                  size: 32,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.lightbulb,
+                                      color:
+                                          ((component as Led)
+                                                  .inputs
+                                                  .isNotEmpty &&
+                                              (component as Led)
+                                                  .inputs[0]
+                                                  .value)
+                                          ? Color((component as Led).colorHigh)
+                                          : Color((component as Led).colorLow),
+                                      size: 32,
+                                    ),
+                                    if ((component as Led).label.isNotEmpty)
+                                      Text(
+                                        (component as Led).label,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                  ],
                                 ),
                               )
                             else if (component is IntegratedCircuit)
@@ -330,13 +348,19 @@ class ComponentWidget extends StatelessWidget {
   }
 
   Widget _buildSegmentDisplayContent(SegmentDisplay display) {
-    int val = display.inputValue;
     int mask;
     bool is7Seg = display.segments == 7;
 
     if (is7Seg) {
-      mask = Segment7Patterns.getHexMask(val);
+      // Raw segment control: pin i corresponds to bit i
+      mask = 0;
+      for (int i = 0; i < display.inputs.length; i++) {
+        if (display.inputs[i].value) {
+          mask |= (1 << i);
+        }
+      }
     } else {
+      int val = display.inputValue;
       mask = SegmentPatterns.getMask(val);
     }
 
@@ -477,7 +501,8 @@ class ComponentWidget extends StatelessWidget {
             ],
             if (component is CircuitInput ||
                 component is CircuitOutput ||
-                component is ButtonComponent)
+                component is ButtonComponent ||
+                component is Led)
               ListTile(
                 leading: const Icon(Icons.label),
                 title: const Text('Edit Label'),
@@ -748,6 +773,7 @@ class ComponentWidget extends StatelessWidget {
     if (comp is CircuitInput) currentLabel = comp.label;
     if (comp is CircuitOutput) currentLabel = comp.label;
     if (comp is ButtonComponent) currentLabel = comp.label;
+    if (comp is Led) currentLabel = comp.label;
 
     TextEditingController controller = TextEditingController(
       text: forceUppercase ? currentLabel.toUpperCase() : currentLabel,
@@ -780,6 +806,7 @@ class ComponentWidget extends StatelessWidget {
             if (comp is CircuitInput) comp.label = finalLabel;
             if (comp is CircuitOutput) comp.label = finalLabel;
             if (comp is ButtonComponent) comp.label = finalLabel;
+            if (comp is Led) comp.label = finalLabel;
             Provider.of<CircuitProvider>(context, listen: false).refresh();
             Navigator.pop(ctx);
           },
@@ -793,6 +820,7 @@ class ComponentWidget extends StatelessWidget {
               if (comp is CircuitInput) comp.label = finalLabel;
               if (comp is CircuitOutput) comp.label = finalLabel;
               if (comp is ButtonComponent) comp.label = finalLabel;
+              if (comp is Led) comp.label = finalLabel;
               Provider.of<CircuitProvider>(context, listen: false).refresh();
               Navigator.pop(ctx);
             },

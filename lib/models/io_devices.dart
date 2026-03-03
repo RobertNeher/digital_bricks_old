@@ -34,12 +34,14 @@ class Oscillator extends LogicComponent {
 class Led extends LogicComponent {
   int colorHigh;
   int colorLow;
+  String label;
 
   Led({
     super.id,
     required super.position,
     this.colorHigh = 0xFFFF0000, // Red
     this.colorLow = 0xFF550000, // Dark Red
+    this.label = "",
   }) : super(name: 'LED', type: ComponentType.led) {
     addInputPin();
   }
@@ -57,6 +59,7 @@ class Led extends LogicComponent {
     final json = super.toJson();
     json['colorHigh'] = colorHigh;
     json['colorLow'] = colorLow;
+    json['label'] = label;
     return json;
   }
 }
@@ -81,9 +84,11 @@ class SegmentDisplay extends LogicComponent {
          type: segments == 7 ? ComponentType.segment7 : ComponentType.segment16,
        ) {
     if (segments == 7) {
-      // 4 inputs for Hex decoding (0-F)
-      for (int i = 0; i < 4; i++) {
+      // 8 inputs for raw segment control (a-g + dp)
+      const labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'];
+      for (int i = 0; i < 8; i++) {
         addInputPin();
+        inputs[i].label = labels[i];
       }
     } else {
       // 7 inputs for ASCII (0-127) to cover A-Z, a-z
