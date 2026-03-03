@@ -15,12 +15,9 @@ enum ComponentType {
   segment7,
   segment16,
   constantSource,
-  dFlipFlop,
-  rsFlipFlop,
   circuitInput,
   circuitOutput,
   button,
-  jkFlipFlop,
   markdownText,
   integratedCircuit,
 }

@@ -21,11 +21,6 @@ class SelectionBar extends StatelessWidget {
             ComponentType.nxor,
             ComponentType.inverter,
           ]),
-          _buildCategory("Flip-flops", [
-            ComponentType.dFlipFlop,
-            ComponentType.rsFlipFlop,
-            ComponentType.jkFlipFlop,
-          ]),
           _buildCategory("Input/Output", [
             ComponentType.circuitInput,
             ComponentType.circuitOutput,

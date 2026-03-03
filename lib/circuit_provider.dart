@@ -9,7 +9,6 @@ import 'models/logic_component.dart';
 import 'models/markdown_component.dart';
 import 'models/gates.dart';
 import 'models/io_devices.dart';
-import 'models/memory.dart';
 import 'models/connection.dart';
 import 'models/pin.dart';
 import 'models/circuit_io.dart';
@@ -646,14 +645,6 @@ class CircuitProvider extends ChangeNotifier {
     Offset pos = Offset(json['position_dx'], json['position_dy']);
     String id = json['id'];
 
-    // HEURISTIC FIX: Detect enum drift in old files (CircuitInput 20 -> 19 as RsFlipFlop)
-    if (type == ComponentType.rsFlipFlop && json.containsKey('label')) {
-      debugPrint(
-        "Correcting component type from RsFlipFlop to CircuitInput (Enum Drift Fix)",
-      );
-      type = ComponentType.circuitInput;
-    }
-
     LogicComponent? comp;
 
     switch (type) {
@@ -710,24 +701,6 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.constantSource:
         bool state = json['state'] ?? true;
         comp = ConstantSource(id: id, position: pos, state: state);
-        break;
-      case ComponentType.dFlipFlop:
-        comp = DFlipFlop(id: id, position: pos);
-        if (json.containsKey('storedValue')) {
-          (comp as DFlipFlop).setStoredValue(json['storedValue']);
-        }
-        break;
-      case ComponentType.rsFlipFlop:
-        comp = RsFlipFlop(id: id, position: pos);
-        if (json.containsKey('storedValue')) {
-          (comp as RsFlipFlop).setStoredValue(json['storedValue']);
-        }
-        break;
-      case ComponentType.jkFlipFlop:
-        comp = JKFlipFlop(id: id, position: pos);
-        if (json.containsKey('storedValue')) {
-          (comp as JKFlipFlop).setStoredValue(json['storedValue']);
-        }
         break;
       case ComponentType.circuitInput:
         comp = CircuitInput(id: id, position: pos);
@@ -820,15 +793,6 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.constantSource:
         comp = ConstantSource(id: id, position: pos);
-        break;
-      case ComponentType.dFlipFlop:
-        comp = DFlipFlop(id: id, position: pos);
-        break;
-      case ComponentType.rsFlipFlop:
-        comp = RsFlipFlop(id: id, position: pos);
-        break;
-      case ComponentType.jkFlipFlop:
-        comp = JKFlipFlop(id: id, position: pos);
         break;
       case ComponentType.circuitInput:
         comp = CircuitInput(id: id, position: pos);

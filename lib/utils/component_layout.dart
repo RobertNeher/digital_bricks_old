@@ -42,12 +42,6 @@ class ComponentLayout {
       if (bodyHeight < baseHeight) bodyHeight = baseHeight;
     }
 
-    if (component.type == ComponentType.dFlipFlop ||
-        component.type == ComponentType.rsFlipFlop ||
-        component.type == ComponentType.jkFlipFlop) {
-      bodyHeight += 20.0;
-    }
-
     double bodyWidth = baseWidth;
     if (component is MarkdownComponent) {
       bodyWidth = 250.0;
@@ -81,8 +75,12 @@ class ComponentLayout {
 
     double inputColWidth = pinSize + (anyInputLabel ? 48.0 : 0);
     double outputColWidth = pinSize + (anyOutputLabel ? 48.0 : 0);
- 
-    double totalWidth = inputColWidth + bodyWidth + outputColWidth + 8.0; // +8 for 4px horizontal padding
+
+    double totalWidth =
+        inputColWidth +
+        bodyWidth +
+        outputColWidth +
+        8.0; // +8 for 4px horizontal padding
     double totalHeight = bodyHeight + 8.0; // +8 for 4px vertical padding
 
     return ComponentLayoutMetadata(
