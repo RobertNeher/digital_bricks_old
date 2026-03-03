@@ -14,14 +14,20 @@
 * **Oscillator**: Configurable Oscillator for precise clock signal generation.
 
 ### 🖼️ Visualization & I/O
-* **Interactive Indicators**: Customizable LEDs (with labels and High/Low colors), 7-segment displays (raw bitwise control with decimal point), and 16-segment displays (ASCII decoding).
-* **User Input**: Interactive Buttons (with labels) and Constant Sources.
+* **Interactive Indicators**: Customizable LEDs with labels and adjustable High/Low colors. Multi-segment displays (7 and 16 segments) with independent decimal point control.
+* **User Input**: Interactive Buttons with labels and toggleable Constant Sources.
 * **Markdown Support**: Embed documentation directly into your circuit using Markdown components.
 
 ### 🔌 Display Pin Layouts
 
 #### 7-Segment Display (Raw Control)
 The 7-segment display uses 8 input pins for direct segment control:
+
+| Pin | Segment |
+| :-- | :--- |
+| `a`-`g` | Corresponding segments A-G |
+| `dp` | Decimal Point |
+
 ```
        a
      f   b
@@ -29,25 +35,22 @@ The 7-segment display uses 8 input pins for direct segment control:
      e   c
        d   (dp)
 ```
-*   **Pins a-g**: Map directly to the segments shown above.
-*   **Pin dp**: Controls the decimal point.
 
 #### 16-Segment Display (ASCII Decoder + DP)
-The 16-segment display uses 8 input pins:
-*   **Pins 1-7 (Top to Bottom)**: Map to bits 6 down to 0 of the ASCII character (0-127).
-*   **Pin 8 (Bottom, labeled 'dp')**: Controls the decimal point.
-*   **Logic**: Bit 0 of ASCII is at pin 7, bit 1 is at pin 6, etc. Pin 8 is an independent decimal point control.
+The 16-segment display uses 8 input pins to decode ASCII characters and control the decimal point:
+
+| Pin Index | Function |
+| :--- | :--- |
+| 1-7 (Top) | ASCII bits 6 down to 0 (Standard character set 0-127) |
+| 8 (Bottom) | Decimal Point (`dp`) |
+
+*   **Logic**: Bit 0 (LSB) of the ASCII value is pin 7, bit 1 is pin 6, etc. Pin 8 is an independent decimal point control.
 
 ---
 
 ## 🏗️ Integrated Circuits (Modular Design)
 
 Modularize your designs by creating custom **Integrated Circuits (ICs)**.
-
-### 📦 Blueprints
-* **Create**: Select any part of a circuit and save it as a "Blueprint".
-* **Reuse**: Blueprints can be dropped onto the canvas as single, compact IC components.
-* **Persistence**: Blueprints are stored in `assets/blueprints.json`.
 
 ### 🔓 Unpack & Repack
 * **Live Inspection**: Right-click an IC and select **Unpack** to expand it into its constituent components on the main canvas.
