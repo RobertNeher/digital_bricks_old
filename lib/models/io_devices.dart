@@ -91,9 +91,10 @@ class SegmentDisplay extends LogicComponent {
         inputs[i].label = labels[i];
       }
     } else {
-      // 7 inputs for ASCII (0-127) to cover A-Z, a-z
-      for (int i = 0; i < 7; i++) {
+      // 8 inputs: bits 0-6 for ASCII, bit 7 for DP
+      for (int i = 0; i < 8; i++) {
         addInputPin();
+        if (i == 7) inputs[i].label = 'dp';
       }
     }
   }

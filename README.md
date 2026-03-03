@@ -10,14 +10,33 @@
 * **Flexible Inputs**: Standard gates (AND, NAND, OR, NOR, XOR, NXOR) support 2, 3, 4, or 8 inputs, configurable via context menu.
 * **Precision Inversion**: High-speed inverter (NOT) gate.
 
-### 💾 Memory & Sequential Logic
-* **Flip-Flops**: D, RS, and JK flip-flops with Reset and Preset capabilities.
-* **Timing**: Configurable Oscillator for precise clock signal generation.
+### ⏱️ Timing
+* **Oscillator**: Configurable Oscillator for precise clock signal generation.
 
 ### 🖼️ Visualization & I/O
-* **Interactive Indicators**: Customizable LEDs (High/Low colors) and multi-segment displays (7 and 16 segments).
-* **User Input**: Interactive Buttons and Constant Sources.
+* **Interactive Indicators**: Customizable LEDs (with labels and High/Low colors), 7-segment displays (raw bitwise control with decimal point), and 16-segment displays (ASCII decoding).
+* **User Input**: Interactive Buttons (with labels) and Constant Sources.
 * **Markdown Support**: Embed documentation directly into your circuit using Markdown components.
+
+### 🔌 Display Pin Layouts
+
+#### 7-Segment Display (Raw Control)
+The 7-segment display uses 8 input pins for direct segment control:
+```
+       a
+     f   b
+       g
+     e   c
+       d   (dp)
+```
+*   **Pins a-g**: Map directly to the segments shown above.
+*   **Pin dp**: Controls the decimal point.
+
+#### 16-Segment Display (ASCII Decoder + DP)
+The 16-segment display uses 8 input pins:
+*   **Pins 1-7 (Top to Bottom)**: Map to bits 6 down to 0 of the ASCII character (0-127).
+*   **Pin 8 (Bottom, labeled 'dp')**: Controls the decimal point.
+*   **Logic**: Bit 0 of ASCII is at pin 7, bit 1 is at pin 6, etc. Pin 8 is an independent decimal point control.
 
 ---
 

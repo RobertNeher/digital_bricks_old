@@ -174,6 +174,14 @@ class SegmentDisplayPainter extends CustomPainter {
         thickness,
       ),
     );
+
+    // DP (Decimal Point)
+    bool isDpOn = (mask & (1 << 7)) != 0;
+    canvas.drawCircle(
+      Offset(w - paddingX / 2, h - paddingY * 1.5),
+      thickness / 2.5,
+      isDpOn ? paintOn : paintOff,
+    );
   }
 
   void _paint16Seg(Canvas canvas, Size size) {
@@ -314,6 +322,21 @@ class SegmentDisplayPainter extends CustomPainter {
     drawSeg(15, pM);
 
     canvas.restore();
+
+    // DP (Decimal Point)
+    bool isDpOn = (mask & (1 << 16)) != 0;
+    final paintOnFill = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final paintOffFill = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      Offset(size.width - paddingX / 2, size.height - paddingY * 1.5),
+      localStroke / 1.5,
+      isDpOn ? paintOnFill : paintOffFill,
+    );
   }
 
   @override

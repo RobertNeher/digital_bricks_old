@@ -63,8 +63,9 @@ class ComponentWidget extends StatelessWidget {
                           Widget pw = PinWidget(pin: entry.value);
                           String? label;
                           if (component is SegmentDisplay) {
-                            label = (component.inputs.length - 1 - idx)
-                                .toString();
+                            label =
+                                entry.value.label ??
+                                (component.inputs.length - 1 - idx).toString();
                           } else {
                             label = entry.value.label;
                           }
@@ -360,8 +361,20 @@ class ComponentWidget extends StatelessWidget {
         }
       }
     } else {
-      int val = display.inputValue;
-      mask = SegmentPatterns.getMask(val);
+      // 16-segment ASCII mode
+      int asciiVal = 0;
+      // First 7 pins are ASCII bits (Top to Bottom: bits 6 down to 0)
+      for (int i = 0; i < 7 && i < display.inputs.length; i++) {
+        if (display.inputs[i].value) {
+          asciiVal |= (1 << (6 - i));
+        }
+      }
+      mask = SegmentPatterns.getMask(asciiVal);
+
+      // 8th pin (index 7) is DP -> bit 16 in mask
+      if (display.inputs.length > 7 && display.inputs[7].value) {
+        mask |= (1 << 16);
+      }
     }
 
     double h = display.fontSize;
