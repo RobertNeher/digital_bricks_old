@@ -147,7 +147,11 @@ class ComponentWidget extends StatelessWidget {
                               ? Colors.grey[200]
                               : Colors.transparent,
                           border: Border.all(
-                            color: isSelected ? Colors.blue : Colors.grey[300]!,
+                            color: isSelected
+                                ? Colors.blue
+                                : (component is MarkdownComponent
+                                    ? Colors.transparent
+                                    : Colors.grey[300]!),
                             width: 1.0,
                           ),
                           borderRadius: BorderRadius.circular(4),
@@ -226,15 +230,7 @@ class ComponentWidget extends StatelessWidget {
                                   ],
                                 ),
                               )
-                            else if (component is MarkdownComponent)
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: MarkdownBody(
-                                  data: (component as MarkdownComponent).text,
-                                  extensionSet: md.ExtensionSet.gitHubFlavored,
-                                ),
-                              )
-                            else
+                            else if (component is! MarkdownComponent)
                               // Fallback to GatePainter for everything else (Logic Gates, FlipFlops, IO, etc.)
                               Center(
                                 child: Stack(
@@ -890,7 +886,7 @@ class _MarkdownEditorWidgetState extends State<_MarkdownEditorWidget> {
         },
         child: Container(
           padding: const EdgeInsets.all(4),
-          color: Colors.white,
+          color: Colors.transparent,
           child: GestureDetector(
             onTap: () {
               // Ensure focus on tap explicitly
@@ -920,14 +916,16 @@ class _MarkdownEditorWidgetState extends State<_MarkdownEditorWidget> {
 
     return Container(
       padding: const EdgeInsets.all(8),
-      color: Colors.white,
+      color: Colors.transparent,
       child: SingleChildScrollView(
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
             width: 250.0 - 16, // Use the component width minus padding
             child: MarkdownBody(
-              data: widget.component.text,
+              data: widget.component.text.isEmpty
+                  ? "*Double click to edit*"
+                  : widget.component.text,
               shrinkWrap: true,
               extensionSet: md.ExtensionSet.gitHubFlavored,
             ),
