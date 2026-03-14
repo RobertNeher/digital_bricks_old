@@ -34,7 +34,10 @@ void main() {
       "position_dy": y,
       "inputs": inputs,
       "outputs": outputs,
-      "label": labels
+      "label": labels,
+      "inputCount": inputCount,
+      "frequency": type == 7 ? 1.0 : null,
+      "state": type == 11 ? true : null,
     };
   }
 
@@ -48,12 +51,12 @@ void main() {
   }
 
   Map<String, dynamic> makeDFlipFlop(double startX, double startY) {
-    var ff = genComp("D-FF", 17, startX, startY, inputCount: 2, outputCount: 2);
+    var ff = genComp("D type", 17, startX, startY, inputCount: 2, outputCount: 2);
     components.add(ff);
     return ff;
   }
 
-  var mainClock = genComp("CLOCK", 12, 50, 200, labels: "CLK", outputCount: 1);
+  var mainClock = genComp("Input Fan", 12, 50, 200, labels: "CLK", outputCount: 1);
   components.add(mainClock);
 
   List<Map<String, dynamic>> ffs = [];
@@ -73,7 +76,7 @@ void main() {
   }
 
   for (int i = 0; i < 4; i++) {
-    var out = genComp("Q${i}", 13, 300 + i * 350.0 + 150, 400, labels: "Q${i}", inputCount: 1, outputCount: 0);
+    var out = genComp("Output Fan", 13, 300 + i * 350.0 + 150, 400, labels: "Q${i}", inputCount: 1, outputCount: 0);
     components.add(out);
     addConn(ffs[i], 0, out, 0);
   }

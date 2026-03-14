@@ -46,6 +46,7 @@ enum ComponentType {
   integratedCircuit,
   dFlipFlop,
   jkFlipFlop,
+  rsFlipFlop,
 }
 
 abstract class LogicComponent {

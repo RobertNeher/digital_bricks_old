@@ -140,6 +140,12 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void removeComponent(String id) {
+    // If it's part of an unpacked IC, remove it from that IC too
+    final parent = findParentIC(id);
+    if (parent != null) {
+      parent.removeInternalComponent(id);
+    }
+
     _removeComponentInternal(id);
     notifyListeners();
   }
@@ -152,8 +158,8 @@ class CircuitProvider extends ChangeNotifier {
     List<Connection> connectionsToRemove = connections
         .where(
           (conn) =>
-              conn.sourcePinId.startsWith(id) ||
-              conn.targetPinId.startsWith(id),
+              conn.sourcePinId.split('-').first == id ||
+              conn.targetPinId.split('-').first == id,
         )
         .toList();
 
@@ -286,10 +292,10 @@ class CircuitProvider extends ChangeNotifier {
     // 1. Identify internal connections
     final internalConns = connections.where((conn) {
       bool sourceInside = selectedComps.any(
-        (c) => conn.sourcePinId.startsWith(c.id),
+        (c) => conn.sourcePinId.split('-').first == c.id,
       );
       bool targetInside = selectedComps.any(
-        (c) => conn.targetPinId.startsWith(c.id),
+        (c) => conn.targetPinId.split('-').first == c.id,
       );
       return sourceInside && targetInside;
     }).toList();
@@ -305,7 +311,11 @@ class CircuitProvider extends ChangeNotifier {
     if (minX == double.infinity) return;
     final icPos = Vec2(minX, minY);
 
-    // 3. Create the IC
+    // 3. Create and normalize components for the IC
+    for (var comp in selectedComps) {
+      comp.position -= icPos;
+    }
+
     final ic = IntegratedCircuit(
       name: "Repacked Circuit",
       position: icPos,
@@ -314,10 +324,13 @@ class CircuitProvider extends ChangeNotifier {
     );
 
     // 4. Remove internal components and their connections from main board
-    // Note: removeComponent will remove their external connections too.
     for (var comp in selectedComps) {
-      removeComponent(comp.id);
+      _removeComponentInternal(comp.id);
     }
+
+    // Also remove internal connections from board
+    final connIdsToRemove = internalConns.map((c) => c.id).toSet();
+    connections.removeWhere((conn) => connIdsToRemove.contains(conn.id));
 
     // 5. Add the new IC
     addComponent(ic);
@@ -621,17 +634,54 @@ class CircuitProvider extends ChangeNotifier {
 
     final ic = comp;
 
-    // 1. Remove internal components and their connections from the board
-    final internalIds = ic.internalComponents.map((c) => c.id).toList();
+    // 0. Sync internal components with what's actually on the board 
+    // (in case some were deleted while unpacked)
+    ic.internalComponents.removeWhere((child) => !components.any((c) => c.id == child.id));
+
+    // 1. Capture current positions and calculate new IC top-left
+    if (ic.internalComponents.isEmpty) {
+      ic.isUnpacked = false;
+      ic.name = ic.name.replaceAll(" (unpacked)", "");
+      notifyListeners();
+      return;
+    }
+
+    double minX = double.infinity;
+    double minY = double.infinity;
+    for (var child in ic.internalComponents) {
+      if (child.position.dx < minX) minX = child.position.dx;
+      if (child.position.dy < minY) minY = child.position.dy;
+    }
+
+    final newPos = Vec2(minX, minY);
+    
+    // 2. Identify all connections between internal components currently on board
+    final internalIds = ic.internalComponents.map((c) => c.id).toSet();
+    final currentInternalConns = connections.where((conn) {
+      String srcCompId = conn.sourcePinId.split('-').first;
+      String destCompId = conn.targetPinId.split('-').first;
+      return internalIds.contains(srcCompId) && internalIds.contains(destCompId);
+    }).toList();
+
+    // 3. Update IC state
+    ic.position = newPos;
+    ic.internalConnections.clear();
+    ic.internalConnections.addAll(currentInternalConns);
+    
+    // Remove from board BEFORE normalizing, because _removeComponentInternal might use world coords if we ever add that
+    // Actually, we must remove from board first.
     for (var childId in internalIds) {
       _removeComponentInternal(childId);
     }
 
-    // Also remove any internal connections that were added to the board
-    final connIds = ic.internalConnections.map((c) => c.id).toList();
-    connections.removeWhere((conn) => connIds.contains(conn.id));
+    for (var child in ic.internalComponents) {
+      child.position -= newPos; // Normalize back to local coordinates
+    }
 
-    // 2. Restore IC state
+    // Also remove the connections we captured (they are now solely internal to IC)
+    final connIdsToRemove = currentInternalConns.map((c) => c.id).toSet();
+    connections.removeWhere((conn) => connIdsToRemove.contains(conn.id));
+
     ic.isUnpacked = false;
     ic.name = ic.name.replaceAll(" (unpacked)", "");
 
@@ -658,28 +708,28 @@ class CircuitProvider extends ChangeNotifier {
 
     switch (type) {
       case ComponentType.and:
-        comp = AndGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = AndGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.nand:
-        comp = NandGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = NandGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.or:
-        comp = OrGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = OrGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.nor:
-        comp = NorGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = NorGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.xor:
-        comp = XorGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = XorGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.nxor:
-        comp = NxorGate(id: id, position: pos, inputCount: json['inputCount']);
+        comp = NxorGate(id: id, position: pos, inputCount: json['inputCount'] ?? 2);
         break;
       case ComponentType.inverter:
         comp = Inverter(id: id, position: pos);
         break;
       case ComponentType.oscillator:
-        comp = Oscillator(id: id, position: pos, frequency: json['frequency']);
+        comp = Oscillator(id: id, position: pos, frequency: json['frequency'] ?? 1.0);
         break;
       case ComponentType.led:
         comp = Led(
@@ -765,6 +815,9 @@ class CircuitProvider extends ChangeNotifier {
       case ComponentType.jkFlipFlop:
         comp = JKFlipFlop(id: id, position: pos);
         break;
+      case ComponentType.rsFlipFlop:
+        comp = RSFlipFlop(id: id, position: pos);
+        break;
     }
     return comp;
   }
@@ -828,6 +881,9 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.jkFlipFlop:
         comp = JKFlipFlop(id: id, position: pos);
+        break;
+      case ComponentType.rsFlipFlop:
+        comp = RSFlipFlop(id: id, position: pos);
         break;
       case ComponentType.integratedCircuit:
         // ICs are usually added via 'packing' or 'loading',

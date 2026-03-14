@@ -19,6 +19,16 @@ class IntegratedCircuit extends LogicComponent {
     _initializePins();
   }
 
+  void removeInternalComponent(String id) {
+    internalComponents.removeWhere((c) => c.id == id);
+    // Also cleanup connections involving this component? 
+    // Usually repacking handles it, but good to be clean.
+    internalConnections.removeWhere((conn) => 
+      conn.sourcePinId.split('-').first == id || 
+      conn.targetPinId.split('-').first == id
+    );
+  }
+
   void _initializePins() {
     // Collect internal IO components
     final inputsIn = internalComponents.whereType<CircuitInput>().toList();

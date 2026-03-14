@@ -30,6 +30,11 @@ class SelectionBar extends StatelessWidget {
             ComponentType.segment16,
             ComponentType.button,
           ]),
+          _buildCategory("Flip-flops", [
+            ComponentType.dFlipFlop,
+            ComponentType.jkFlipFlop,
+            ComponentType.rsFlipFlop,
+          ]),
           // Spacer for bottom
           const SizedBox(height: 50),
         ],
@@ -95,6 +100,12 @@ class SelectionBar extends StatelessWidget {
         return "1 ▷";
       case ComponentType.markdownText:
         return "Text";
+      case ComponentType.dFlipFlop:
+        return "D type";
+      case ComponentType.jkFlipFlop:
+        return "JK type";
+      case ComponentType.rsFlipFlop:
+        return "RS type";
       default:
         return type.name.toUpperCase();
     }

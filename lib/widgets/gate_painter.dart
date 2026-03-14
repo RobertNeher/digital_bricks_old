@@ -77,6 +77,7 @@ class GatePainter extends CustomPainter {
         break;
       case ComponentType.dFlipFlop:
       case ComponentType.jkFlipFlop:
+      case ComponentType.rsFlipFlop:
         _drawBox(path, size);
         _drawFlipFlopSymbol(canvas, size, paint, type);
         break;
@@ -200,8 +201,12 @@ class GatePainter extends CustomPainter {
   }
 
   void _drawFlipFlopSymbol(Canvas canvas, Size size, Paint paint, ComponentType type) {
-    // Draw "D" or "JK" text
-    final text = type == ComponentType.dFlipFlop ? "D" : "JK";
+    // Draw "D", "JK", or "RS" text
+    String text = "";
+    if (type == ComponentType.dFlipFlop) text = "D type";
+    if (type == ComponentType.jkFlipFlop) text = "JK type";
+    if (type == ComponentType.rsFlipFlop) text = "RS type";
+    
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,
