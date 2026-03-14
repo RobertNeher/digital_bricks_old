@@ -51,7 +51,7 @@ class IntegratedCircuit extends LogicComponent {
 
     // 2. Propagate signals internally
     // We run a few iterations to reach steady state for simple combinational logic.
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 10; i++) {
       _propagateInternal();
     }
 

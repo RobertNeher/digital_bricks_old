@@ -1,6 +1,30 @@
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'pin.dart';
+
+class Vec2 {
+  final double dx;
+  final double dy;
+
+  const Vec2(this.dx, this.dy);
+
+  static const Vec2 zero = Vec2(0, 0);
+
+  Vec2 operator +(Vec2 other) => Vec2(dx + other.dx, dy + other.dy);
+  Vec2 operator -(Vec2 other) => Vec2(dx - other.dx, dy - other.dy);
+  Vec2 operator *(double scalar) => Vec2(dx * scalar, dy * scalar);
+
+  Map<String, dynamic> toJson() => {'dx': dx, 'dy': dy};
+
+  factory Vec2.fromJson(Map<String, dynamic> json) {
+    return Vec2(
+      (json['dx'] ?? json['position_dx'] ?? 0.0).toDouble(),
+      (json['dy'] ?? json['position_dy'] ?? 0.0).toDouble(),
+    );
+  }
+
+  @override
+  String toString() => 'Vec2($dx, $dy)';
+}
 
 enum ComponentType {
   and,
@@ -20,12 +44,14 @@ enum ComponentType {
   button,
   markdownText,
   integratedCircuit,
+  dFlipFlop,
+  jkFlipFlop,
 }
 
 abstract class LogicComponent {
   String id;
   String name;
-  Offset position;
+  Vec2 position;
   ComponentType type;
   List<Pin> inputs = [];
   List<Pin> outputs = [];

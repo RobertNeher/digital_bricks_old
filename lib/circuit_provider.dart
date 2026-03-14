@@ -13,7 +13,16 @@ import 'models/connection.dart';
 import 'models/pin.dart';
 import 'models/circuit_io.dart';
 import 'models/integrated_circuit.dart';
+import 'models/sequential.dart';
 import 'utils/file_ops.dart';
+
+extension OffsetToVec2 on Offset {
+  Vec2 toVec2() => Vec2(dx, dy);
+}
+
+extension Vec2ToOffset on Vec2 {
+  Offset toOffset() => Offset(dx, dy);
+}
 
 class CircuitProvider extends ChangeNotifier {
   List<LogicComponent> components = [];
@@ -231,7 +240,7 @@ class CircuitProvider extends ChangeNotifier {
     if (selectedComponentIds.isEmpty) return;
     for (var c in components) {
       if (selectedComponentIds.contains(c.id)) {
-        c.position += delta;
+        c.position += delta.toVec2();
       }
     }
     notifyListeners();
@@ -240,7 +249,7 @@ class CircuitProvider extends ChangeNotifier {
   void updateComponentPosition(String id, Offset delta) {
     try {
       var comp = components.firstWhere((c) => c.id == id);
-      comp.position += delta;
+      comp.position += delta.toVec2();
       notifyListeners();
     } catch (_) {}
   }
@@ -294,7 +303,7 @@ class CircuitProvider extends ChangeNotifier {
     }
 
     if (minX == double.infinity) return;
-    final icPos = Offset(minX, minY);
+    final icPos = Vec2(minX, minY);
 
     // 3. Create the IC
     final ic = IntegratedCircuit(
@@ -340,28 +349,28 @@ class CircuitProvider extends ChangeNotifier {
           .map((c) => c.position.dx)
           .reduce((a, b) => a < b ? a : b);
       for (var c in selected) {
-        c.position = Offset(minX, c.position.dy);
+        c.position = Vec2(minX, c.position.dy);
       }
     } else if (axis == 'right') {
       double maxX = selected
           .map((c) => c.position.dx)
           .reduce((a, b) => a > b ? a : b);
       for (var c in selected) {
-        c.position = Offset(maxX, c.position.dy);
+        c.position = Vec2(maxX, c.position.dy);
       }
     } else if (axis == 'top') {
       double minY = selected
           .map((c) => c.position.dy)
           .reduce((a, b) => a < b ? a : b);
       for (var c in selected) {
-        c.position = Offset(c.position.dx, minY);
+        c.position = Vec2(c.position.dx, minY);
       }
     } else if (axis == 'bottom') {
       double maxY = selected
           .map((c) => c.position.dy)
           .reduce((a, b) => a > b ? a : b);
       for (var c in selected) {
-        c.position = Offset(c.position.dx, maxY);
+        c.position = Vec2(c.position.dx, maxY);
       }
     }
 
@@ -532,7 +541,7 @@ class CircuitProvider extends ChangeNotifier {
   }
 
   void packCircuit(Map<String, dynamic> data, String name, {Offset? position}) {
-    final pos = position ?? (getViewportCenter?.call() ?? Offset.zero);
+    final pos = (position ?? (getViewportCenter?.call() ?? Offset.zero)).toVec2();
     final List<dynamic> internalCompsJson = data['components'] ?? [];
     final List<dynamic> internalConnsJson = data['connections'] ?? [];
 
@@ -587,7 +596,7 @@ class CircuitProvider extends ChangeNotifier {
       minY = 0;
     }
 
-    final Offset offset = ic.position - Offset(minX, minY);
+    final Vec2 offset = ic.position - Vec2(minX, minY);
 
     for (var internalComp in ic.internalComponents) {
       internalComp.position += offset;
@@ -642,7 +651,7 @@ class CircuitProvider extends ChangeNotifier {
 
   LogicComponent? _deserializeComponent(Map<String, dynamic> json) {
     ComponentType type = ComponentType.values[json['type']];
-    Offset pos = Offset(json['position_dx'], json['position_dy']);
+    Vec2 pos = Vec2.fromJson(json);
     String id = json['id'];
 
     LogicComponent? comp;
@@ -750,13 +759,20 @@ class CircuitProvider extends ChangeNotifier {
           text: json['text'] ?? "",
         );
         break;
+      case ComponentType.dFlipFlop:
+        comp = DFlipFlop(id: id, position: pos);
+        break;
+      case ComponentType.jkFlipFlop:
+        comp = JKFlipFlop(id: id, position: pos);
+        break;
     }
     return comp;
   }
 
-  void addComponentByType(ComponentType type, Offset pos) {
+  void addComponentByType(ComponentType type, Offset posOffset) {
     LogicComponent? comp;
     String id = const Uuid().v4();
+    Vec2 pos = posOffset.toVec2();
 
     switch (type) {
       case ComponentType.and:
@@ -806,6 +822,12 @@ class CircuitProvider extends ChangeNotifier {
         break;
       case ComponentType.markdownText:
         comp = MarkdownComponent(id: id, position: pos);
+        break;
+      case ComponentType.dFlipFlop:
+        comp = DFlipFlop(id: id, position: pos);
+        break;
+      case ComponentType.jkFlipFlop:
+        comp = JKFlipFlop(id: id, position: pos);
         break;
       case ComponentType.integratedCircuit:
         // ICs are usually added via 'packing' or 'loading',

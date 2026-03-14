@@ -1,5 +1,3 @@
-// import 'dart:async';
-import 'package:flutter/material.dart';
 import 'logic_component.dart';
 
 class Oscillator extends LogicComponent {
@@ -51,8 +49,8 @@ class Led extends LogicComponent {
     // Just holds state
   }
 
-  Color get currentColor =>
-      inputs.isNotEmpty && inputs[0].value ? Color(colorHigh) : Color(colorLow);
+  int get currentColor =>
+      inputs.isNotEmpty && inputs[0].value ? colorHigh : colorLow;
 
   @override
   Map<String, dynamic> toJson() {

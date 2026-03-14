@@ -1,6 +1,4 @@
-// import 'package:flutter/material.dart';
 import 'logic_component.dart';
-// import 'pin.dart';
 
 // Base class for gates with variable number of inputs
 abstract class MultiInputGate extends LogicComponent {

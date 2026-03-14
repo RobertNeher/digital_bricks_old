@@ -4,6 +4,14 @@ import '../models/io_devices.dart';
 import '../models/integrated_circuit.dart';
 import '../models/markdown_component.dart';
 
+extension Vec2ToOffset on Vec2 {
+  Offset toOffset() => Offset(dx, dy);
+}
+
+extension OffsetToVec2 on Offset {
+  Vec2 toVec2() => Vec2(dx, dy);
+}
+
 class ComponentLayoutMetadata {
   final double totalWidth;
   final double totalHeight;
@@ -119,6 +127,6 @@ class ComponentLayout {
     double centerY =
         space * (pinIndex + 1) + pinSize * pinIndex + (pinSize / 2);
 
-    return component.position + Offset(centerX, centerY);
+    return (component.position + Vec2(centerX, centerY)).toOffset();
   }
 }

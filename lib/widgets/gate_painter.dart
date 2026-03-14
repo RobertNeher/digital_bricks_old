@@ -75,6 +75,11 @@ class GatePainter extends CustomPainter {
       case ComponentType.integratedCircuit:
         _drawBox(path, size);
         break;
+      case ComponentType.dFlipFlop:
+      case ComponentType.jkFlipFlop:
+        _drawBox(path, size);
+        _drawFlipFlopSymbol(canvas, size, paint, type);
+        break;
     }
 
     canvas.drawPath(path, paint);
@@ -192,6 +197,43 @@ class GatePainter extends CustomPainter {
     p.lineTo(w * 0.8, h * 0.7);
     p.lineTo(w * 0.8, h * 0.3);
     canvas.drawPath(p, paint);
+  }
+
+  void _drawFlipFlopSymbol(Canvas canvas, Size size, Paint paint, ComponentType type) {
+    // Draw "D" or "JK" text
+    final text = type == ComponentType.dFlipFlop ? "D" : "JK";
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size.width - textPainter.width) / 2,
+        (size.height - textPainter.height) / 2,
+      ),
+    );
+
+    // Draw clock triangle at index 0 for D (it's the 2nd pin, index 1)
+    // Wait, D-FF has inputs: [CLK, D]. CLK is index 0.
+    // JK-FF has inputs: [CLK, J, K]. CLK is index 0.
+    
+    // Position of clock triangle: left side, middle of the first pin area.
+    // We assume the caller knows where the pins are or we just draw it centrally.
+    final clockPath = Path();
+    double cpY = 15; // Rough estimate for the first pin center
+    clockPath.moveTo(0, cpY - 5);
+    clockPath.lineTo(5, cpY);
+    clockPath.lineTo(0, cpY + 5);
+    canvas.drawPath(clockPath, paint);
   }
 
   void _drawButtonSymbol(Canvas canvas, Size size, bool active) {
