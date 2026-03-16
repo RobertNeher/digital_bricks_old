@@ -1,3 +1,6 @@
+HINT: Discontinued due to heavy unresolvable git problems
+HINT: Looks at ./digital_bricks
+
 # 🧱 Digital Bricks
 
 **Digital Bricks** is a powerful, high-performance digital circuit simulator built with Flutter. It provides an intuitive, high-precision environment for designing, testing, and modularizing complex logic systems.
