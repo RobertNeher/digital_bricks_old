@@ -1,5 +1,5 @@
-HINT: Discontinued due to heavy unresolvable git problems
-HINT: Looks at ./digital_bricks
+HINT: Discontinued due to heavy unresolvable git problems <\br>
+HINT: Looks at ./digital_bricks <\br>
 
 # 🧱 Digital Bricks
 
